@@ -15,7 +15,7 @@ nav {
 
 .logo { font-size: 1.6rem; font-weight: bold; color: #4caf50; letter-spacing: -1px; }
 
-/* 컨테이너: 광고가 들어갈 공간을 위해 max-width를 1400px로 확장 */
+/* 컨테이너: 광고가 들어갈 공간을 위해 max-width를 1400px로 유지 */
 .container {
     display: flex;
     max-width: 1400px;
@@ -183,6 +183,16 @@ pre { margin: 0; border-radius: 8px; font-size: 14px; position: relative; }
 #more-users-btn:hover { background-color: #444; color: #fff; }
 
 /* ============================================================
+   [모바일 하단 광고 전용 스타일 추가]
+   ============================================================ */
+.mobile-bottom-ad {
+    display: none; /* 기본적으로는 숨김 (PC) */
+    text-align: center;
+    margin: 25px 0; /* 피드와 팔로우 목록 사이 적절한 여백 */
+    width: 100%;
+}
+
+/* ============================================================
    [광고 및 미디어 쿼리 통합]
    ============================================================ */
 
@@ -199,10 +209,15 @@ pre { margin: 0; border-radius: 8px; font-size: 14px; position: relative; }
     }
 }
 
-/* 태블릿 및 모바일 통합 대응 (1023px 이하): 광고 숨김 */
+/* 태블릿 및 모바일 통합 대응 (1023px 이하) */
 @media screen and (max-width: 1023px) {
     .left-ad-area {
         display: none !important;
+    }
+
+    /* 모바일에서만 하단 띠 광고 노출 */
+    .mobile-bottom-ad {
+        display: block !important;
     }
     
     .container {
