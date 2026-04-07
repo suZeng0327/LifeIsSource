@@ -15,15 +15,17 @@ nav {
 
 .logo { font-size: 1.6rem; font-weight: bold; color: #4caf50; letter-spacing: -1px; }
 
+/* 컨테이너: 광고가 들어갈 공간을 위해 max-width를 1400px로 확장 */
 .container {
     display: flex;
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 20px auto;
     padding: 0 15px;
     gap: 30px;
+    justify-content: center;
 }
 
-main { flex: 3; }
+main { flex: 3; min-width: 0; }
 
 .sidebar {
     flex: 1;
@@ -166,13 +168,9 @@ pre { margin: 0; border-radius: 8px; font-size: 14px; position: relative; }
 }
 .comment-actions button:hover { color: #4caf50; transform: scale(1.2); }
 
-/* [추가] 게시글 인라인 수정 폼 스타일 */
 .inline-edit-form {
-    background: #1e1e1e;
-    padding: 20px;
-    border-radius: 10px;
-    border: 1px solid #4caf50;
-    margin-bottom: 15px;
+    background: #1e1e1e; padding: 20px; border-radius: 10px;
+    border: 1px solid #4caf50; margin-bottom: 15px;
     animation: fadeIn 0.3s ease;
 }
 
@@ -181,59 +179,53 @@ pre { margin: 0; border-radius: 8px; font-size: 14px; position: relative; }
     to { opacity: 1; transform: translateY(0); }
 }
 
-.inline-edit-form select:focus, 
-.inline-edit-form textarea:focus, 
-.inline-edit-form input:focus {
-    outline: none;
-    border-color: #81c784;
-}
-
-#more-users-btn {
-    background-color: #333;
-    color: #bbb;
-    border: 1px solid #444;
-    transition: 0.2s;
-}
-#more-users-btn:hover {
-    background-color: #444;
-    color: #fff;
-}
+#more-users-btn { background-color: #333; color: #bbb; border: 1px solid #444; transition: 0.2s; }
+#more-users-btn:hover { background-color: #444; color: #fff; }
 
 /* ============================================================
-   [모바일 전용 최적화 코드] - PC 디자인에는 영향을 주지 않습니다.
+   [광고 및 미디어 쿼리 통합]
    ============================================================ */
-@media screen and (max-width: 768px) {
-    /* 1. 상단 네비게이션 최적화 */
-    nav {
-        padding: 10px 3%;
-        flex-direction: column; /* 로고와 버튼들을 위아래로 */
-        gap: 10px;
-    }
-    
-    nav div:last-child { 
-        display: flex; 
-        gap: 5px; 
-        width: 100%; 
-        justify-content: center; 
-    }
-    
-    nav button { 
-        padding: 8px 12px; 
-        font-size: 0.8rem; 
-        flex: 1; /* 버튼들이 가로로 꽉 차게 */
-    }
 
-    /* 2. 전체 레이아웃 세로 정렬 */
+/* PC 화면 (1024px 이상): 왼쪽 광고 노출 및 고정 */
+@media screen and (min-width: 1024px) {
+    .left-ad-area {
+        width: 160px;
+        min-width: 160px;
+        height: 600px;
+        position: sticky;
+        top: 80px;
+        margin-right: 20px;
+        display: block;
+    }
+}
+
+/* 태블릿 및 모바일 통합 대응 (1023px 이하): 광고 숨김 */
+@media screen and (max-width: 1023px) {
+    .left-ad-area {
+        display: none !important;
+    }
+    
     .container {
         flex-direction: column;
         margin: 10px auto;
         padding: 0 10px;
     }
 
+    nav {
+        padding: 10px 3%;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    nav div:last-child { 
+        display: flex; gap: 5px; width: 100%; justify-content: center; 
+    }
+
     .sidebar {
-        position: static; /* 모바일에서는 고정 해제 */
-        order: 2; /* 콘텐츠 다음에 사이드바 배치 */
+        position: static;
+        order: 2;
         width: 100%;
+        margin-top: 20px;
     }
 
     main {
@@ -241,31 +233,14 @@ pre { margin: 0; border-radius: 8px; font-size: 14px; position: relative; }
         width: 100%;
     }
 
-    /* 3. 카드 및 여백 다이어트 */
     .post, .write-card, .profile-header-card {
         padding: 15px;
         margin-bottom: 15px;
-    }
-
-    /* 4. 코드 영역 최적화 (가독성 향상) */
-    pre {
-        font-size: 13px;
-    }
-
-    #code-input {
-        font-size: 13px;
-        padding: 10px;
-    }
-
-    /* 5. 정렬 옵션 버튼 크기 조절 */
-    .sort-options {
-        justify-content: space-between;
     }
 
     .sort-options button {
         flex: 1;
         padding: 8px 5px;
         font-size: 0.8rem;
-        text-align: center;
     }
 }
