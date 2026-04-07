@@ -9,41 +9,51 @@
 </head>
 <body>
     <nav>
-        <div class="logo" id="home-logo" style="cursor:pointer">CodeShare</div>
+        <div class="logo" id="home-logo" onclick="location.reload()" style="cursor:pointer">CodeShare</div>
         <div id="auth-section"></div>
     </nav>
 
-    <main id="main-content">
-        <div class="write-card" id="write-area">
-            <div class="card-header">
-                <h3>새 코드 공유하기</h3>
-                <select id="language-select">
-                    <option value="plaintext">언어 선택</option>
-                    <option value="c">C</option>
-                    <option value="cpp">C++</option>
-                    <option value="python">Python</option>
-                    <option value="csharp">C#</option>
-                    <option value="java">Java</option>
-                    <option value="javascript">JavaScript</option>
-                    <option value="typescript">TypeScript</option>
-                    <option value="html">HTML</option>
-                    <option value="css">CSS</option>
-                </select>
-            </div>
-            <textarea id="code-input" placeholder="여기에 소스코드를 입력하세요..."></textarea>
-            <input type="text" id="desc-input" placeholder="코드에 대한 간단한 설명을 적어주세요.">
-            <div class="actions">
-                <button id="post-btn">공유하기</button>
-            </div>
-        </div>
+    <div class="container">
+        <main id="main-content">
+            <div id="user-profile-header" style="display: none;"></div>
 
-        <div class="sort-options" id="sort-area">
-            <button id="sort-latest" class="active">최신순</button>
-            <button id="sort-popular">인기순</button>
-        </div>
+            <div class="write-card" id="write-area">
+                <div class="card-header">
+                    <h3>새 코드 공유하기</h3>
+                    <select id="language-select">
+                        <option value="plaintext">언어 선택</option>
+                        <option value="c">C</option>
+                        <option value="cpp">C++</option>
+                        <option value="python">Python</option>
+                        <option value="csharp">C#</option>
+                        <option value="java">Java</option>
+                        <option value="javascript">JavaScript</option>
+                        <option value="typescript">TypeScript</option>
+                        <option value="html">HTML</option>
+                        <option value="css">CSS</option>
+                    </select>
+                </div>
+                <textarea id="code-input" placeholder="여기에 소스코드를 입력하세요..."></textarea>
+                <input type="text" id="desc-input" placeholder="코드에 대한 간단한 설명을 적어주세요.">
+                <div class="actions">
+                    <button id="post-btn">공유하기</button>
+                </div>
+            </div>
 
-        <div id="feed"></div>
-    </main>
+            <div class="sort-options" id="sort-area">
+                <button id="sort-latest" class="active">최신순</button>
+                <button id="sort-popular">인기순</button>
+                <button id="sort-follow">팔로우</button>
+            </div>
+
+            <div id="feed"></div>
+        </main>
+
+        <aside class="sidebar" id="follow-sidebar">
+            <h4>팔로우 목록</h4>
+            <div id="follow-list">로그인이 필요합니다.</div>
+        </aside>
+    </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <script type="module" src="script.js"></script>

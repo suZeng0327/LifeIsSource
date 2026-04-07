@@ -14,10 +14,61 @@ nav {
 
 .logo { font-size: 1.6rem; font-weight: bold; color: #4caf50; letter-spacing: -1px; }
 
+/* 레이아웃 구조 */
+.container {
+    display: flex;
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 0 15px;
+    gap: 30px;
+}
+
+main { flex: 3; }
+
+/* 팔로우 목록 사이드바 */
+.sidebar {
+    flex: 1;
+    background: #1a1a1a;
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid #333;
+    height: fit-content;
+    position: sticky;
+    top: 80px;
+}
+
+.sidebar h4 { margin-top: 0; color: #4caf50; border-bottom: 1px solid #333; padding-bottom: 10px; }
+.follow-item {
+    padding: 10px;
+    margin-bottom: 5px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+.follow-item:hover { background: #262626; color: #4caf50; }
+
+/* 유저 프로필 헤더 */
+.profile-header-card {
+    background: #1a1a1a;
+    padding: 30px;
+    border-radius: 12px;
+    margin-bottom: 30px;
+    text-align: center;
+    border: 1px solid #4caf50;
+}
+.profile-info { margin-bottom: 20px; color: #bbb; }
+.follow-btn {
+    background-color: #4caf50;
+    margin-right: 10px;
+}
+.follow-btn.following {
+    background-color: #333;
+    color: #4caf50;
+    border: 1px solid #4caf50;
+}
+
 .user-info { display: flex; align-items: center; gap: 12px; }
 .user-name { color: #fff; font-size: 0.9rem; font-weight: bold; }
-
-main { max-width: 850px; margin: 20px auto; padding: 0 15px; }
 
 .write-card {
     background-color: #1a1a1a; padding: 20px; border-radius: 12px;
@@ -48,6 +99,7 @@ main { max-width: 850px; margin: 20px auto; padding: 0 15px; }
 .sort-options { margin-bottom: 15px; display: flex; gap: 10px; }
 .sort-options button { background: #262626; color: #888; border: 1px solid #333; padding: 8px 18px; transition: 0.3s; }
 .sort-options button.active { background: #4caf50 !important; color: white !important; border-color: #4caf50 !important; }
+#sort-follow.active { background: #2196f3 !important; border-color: #2196f3 !important; }
 
 button {
     background-color: #4caf50; color: white; border: none;
@@ -66,6 +118,7 @@ button:hover { filter: brightness(1.1); }
 .post-header { display: flex; justify-content: space-between; align-items: center; color: #888; font-size: 0.85rem; margin-bottom: 12px; }
 .header-right { display: flex; align-items: center; gap: 10px; }
 .post-author { color: #fff; font-weight: bold; margin-right: 8px; }
+.post-author:hover { color: #4caf50; text-decoration: underline; }
 .post-date { font-size: 0.75rem; color: #666; }
 
 .edit-btn, .delete-btn { padding: 4px 10px; font-size: 0.75rem; border-radius: 4px; color: #fff; }
@@ -95,21 +148,3 @@ pre { margin: 0; border-radius: 8px; font-size: 14px; position: relative; }
 .comment-main { display: flex; justify-content: space-between; align-items: flex-start; }
 .comment-user { color: #4caf50; font-weight: bold; margin-right: 5px; }
 .comment-text { color: #ddd; flex: 1; word-break: break-all; }
-
-.comment-actions { display: flex; gap: 5px; margin-left: 10px; }
-.c-edit-icon, .c-delete-icon { background: none; padding: 2px; font-size: 0.8rem; cursor: pointer; }
-.c-edit-icon:hover, .c-delete-icon:hover { filter: grayscale(1) brightness(2); }
-
-.comment-footer { margin-top: 5px; }
-.c-like-btn { background: none; border: 1px solid #444; color: #888; padding: 2px 6px; font-size: 0.7rem; border-radius: 4px; }
-.c-like-btn.liked { color: #ff5252; border-color: #ff5252; }
-
-/* 추가된 댓글 인라인 수정 UI 스타일 */
-.comment-edit-mode { width: 100%; display: flex; flex-direction: column; gap: 8px; }
-.edit-comment-input { 
-    width: 100%; background: #333; border: 1px solid #4caf50; 
-    color: #fff; padding: 8px; border-radius: 4px; font-family: inherit;
-}
-.edit-actions { display: flex; justify-content: flex-end; gap: 8px; }
-.edit-actions button { padding: 4px 12px; font-size: 0.75rem; }
-.edit-actions .cancel-btn { background-color: #666; }
