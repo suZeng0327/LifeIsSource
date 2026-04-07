@@ -414,9 +414,14 @@ window.editComment = (postId, index, oldText) => {
         <div class="inline-edit-box" style="display:flex; gap:5px; margin-top:5px; width:100%;">
             <input type="text" id="edit-input-${postId}-${index}" value="${oldText}" style="flex:1; background:#333; border:1px solid #4caf50; color:#fff; padding:5px; border-radius:4px; font-size:12px;">
             <button onclick="updateComment('${postId}', ${index}, '${oldText}')" style="padding:2px 8px; font-size:11px; background:#4caf50; color:white; border-radius:4px;">완료</button>
-            <button onclick="updateFeed()" style="padding:2px 8px; font-size:11px; background:#555; color:white; border-radius:4px;">취소</button>
+            <button onclick="cancelEditComment()" style="padding:2px 8px; font-size:11px; background:#555; color:white; border-radius:4px;">취소</button>
         </div>
     `;
+};
+
+// [수정] 댓글 수정 취소 전용 함수 추가
+window.cancelEditComment = () => {
+    updateFeed();
 };
 
 window.updateComment = async (postId, index, oldText) => {
