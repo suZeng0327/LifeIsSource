@@ -23,7 +23,6 @@ let editingPostId = null;
 let openCommentsStore = new Set();
 let myFollowingList = []; 
 
-// [수정] 초기 실행: 페이지 로드 즉시 피드를 먼저 불러옵니다. (멈춤 현상 방지)
 updateFeed(); 
 
 const writeArea = document.getElementById('write-area');
@@ -208,11 +207,9 @@ window.toggleFollow = async (uid, name, isFollowing) => {
 
 document.getElementById('home-logo').onclick = goHome;
 
-// [수정] 인증 상태 감시 함수: 데이터 로딩과 인증 UI 갱신을 분리하여 실행합니다.
 onAuthStateChanged(auth, (user) => {
     syncUserData(user);
     renderAuthUI(user, currentView);
-    // 로그인 상태가 변했을 때(로그인/로그아웃)만 피드를 한 번 더 갱신해줍니다.
     updateFeed(); 
 });
 
@@ -248,7 +245,6 @@ function updateFeed() {
     updateSortButtons();
 
     let q;
-    // [수정] 인증 정보가 없더라도 기본 'all' 뷰는 로드될 수 있도록 조건을 체크합니다.
     if (currentView === 'my' && auth.currentUser) {
         q = query(collection(db, "posts"), where("uid", "==", auth.currentUser.uid), orderBy("createdAt", "desc"));
     } else if (currentView === 'user') {
@@ -261,7 +257,6 @@ function updateFeed() {
         }
         q = query(collection(db, "posts"), where("uid", "in", followUids), orderBy("createdAt", "desc"));
     } else {
-        // 기본 전체 피드 로드
         q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
     }
 
@@ -354,11 +349,16 @@ function createPostElement(post) {
     return div;
 }
 
+// [수정 핵심 부분] 취소 버튼 누르면 폼을 삭제하고 원래 내용을 보여줌
 window.startEdit = async (postId) => {
     const postDiv = document.getElementById(`post-${postId}`);
     const contentView = postDiv.querySelector('.post-content-view');
     const postSnap = await getDoc(doc(db, "posts", postId));
     const data = postSnap.data();
+    
+    // 이미 수정 폼이 떠있다면 중복 생성 방지
+    if (postDiv.querySelector('.inline-edit-form')) return;
+
     contentView.style.display = 'none';
     
     const editForm = document.createElement('div');
@@ -378,11 +378,20 @@ window.startEdit = async (postId) => {
         <textarea id="edit-code-${postId}" style="width:100%; height:200px; background:#1e1e1e; color:#9cdcfe; border:1px solid #4caf50; padding:10px; border-radius:8px; font-family:monospace; margin-bottom:10px;">${data.content}</textarea>
         <input type="text" id="edit-desc-${postId}" value="${data.description || ''}" style="width:100%; background:#262626; border:1px solid #444; color:#fff; padding:8px; border-radius:4px; margin-bottom:10px;">
         <div style="text-align:right; gap:10px; display:flex; justify-content:flex-end;">
-            <button onclick="saveEdit('${postId}')" style="background:#4caf50; font-size:12px;">수정 완료</button>
-            <button onclick="updateFeed()" style="background:#555; font-size:12px;">취소</button>
+            <button id="save-edit-btn-${postId}" style="background:#4caf50; font-size:12px; color:white; border:none; padding:8px 12px; border-radius:4px; cursor:pointer;">수정 완료</button>
+            <button id="cancel-edit-btn-${postId}" style="background:#555; font-size:12px; color:white; border:none; padding:8px 12px; border-radius:4px; cursor:pointer;">취소</button>
         </div>
     `;
     postDiv.prepend(editForm);
+
+    // 수정 완료 버튼 이벤트
+    document.getElementById(`save-edit-btn-${postId}`).onclick = () => saveEdit(postId);
+
+    // [취소 버튼 기능 구현] 폼을 지우고 원래 뷰를 다시 표시함
+    document.getElementById(`cancel-edit-btn-${postId}`).onclick = () => {
+        editForm.remove();
+        contentView.style.display = 'block';
+    };
 };
 
 window.saveEdit = async (postId) => {
@@ -393,6 +402,7 @@ window.saveEdit = async (postId) => {
     await updateDoc(doc(db, "posts", postId), {
         content: newCode, description: newDesc, language: newLang, updatedAt: serverTimestamp()
     });
+    // 저장이 완료되면 updateFeed()가 실행되면서 자동으로 화면이 갱신됩니다.
 };
 
 window.addComment = async (postId) => {
@@ -425,13 +435,9 @@ window.editComment = (postId, index, oldText) => {
         <div class="inline-edit-box" style="display:flex; gap:5px; margin-top:5px; width:100%;">
             <input type="text" id="edit-input-${postId}-${index}" value="${oldText}" style="flex:1; background:#333; border:1px solid #4caf50; color:#fff; padding:5px; border-radius:4px; font-size:12px;">
             <button onclick="updateComment('${postId}', ${index}, '${oldText}')" style="padding:2px 8px; font-size:11px; background:#4caf50; color:white; border-radius:4px;">완료</button>
-            <button onclick="cancelEditComment()" style="padding:2px 8px; font-size:11px; background:#555; color:white; border-radius:4px;">취소</button>
+            <button onclick="updateFeed()" style="padding:2px 8px; font-size:11px; background:#555; color:white; border-radius:4px;">취소</button>
         </div>
     `;
-};
-
-window.cancelEditComment = () => {
-    updateFeed();
 };
 
 window.updateComment = async (postId, index, oldText) => {
