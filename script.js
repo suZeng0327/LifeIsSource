@@ -16,36 +16,67 @@ const auth = getAuth();
 const db = getFirestore();
 const provider = new GoogleAuthProvider();
 
-let currentView = 'all'; // 'all' 또는 'my'
-let currentSort = 'latest'; // 'latest' 또는 'popular'
+let currentView = 'all'; 
+let currentSort = 'latest'; 
 
-// --- 초기화 및 네비게이션 ---
-document.getElementById('home-logo').onclick = () => {
-    currentView = 'all';
-    updateFeed();
-    document.getElementById('write-area').style.display = 'block';
-    document.getElementById('sort-area').style.display = 'flex';
-};
-
-onAuthStateChanged(auth, (user) => {
+// --- 버튼 업데이트 함수 (성훈님 요청: 내가 쓴 글 <-> 홈으로 버튼 교체) ---
+function renderAuthUI(user, viewMode = 'all') {
     const authSection = document.getElementById('auth-section');
     if (user) {
+        let actionBtn = `<button id="my-posts-btn" class="my-posts-btn">내가 쓴 글</button>`;
+        if (viewMode === 'my') {
+            actionBtn = `<button id="home-btn" class="home-btn">홈으로 돌아가기</button>`;
+        }
+
         authSection.innerHTML = `
             <div class="user-info">
-                <button id="my-posts-btn" class="my-posts-btn">내가 쓴 글</button>
+                ${actionBtn}
                 <span class="user-name">👤 ${user.displayName}님</span> 
                 <button id="logout-btn" class="logout-style">로그아웃</button>
             </div>
         `;
+        
         document.getElementById('logout-btn').onclick = () => signOut(auth);
-        document.getElementById('my-posts-btn').onclick = showMyPosts;
+        if (document.getElementById('my-posts-btn')) {
+            document.getElementById('my-posts-btn').onclick = showMyPosts;
+        }
+        if (document.getElementById('home-btn')) {
+            document.getElementById('home-btn').onclick = goHome;
+        }
     } else {
         authSection.innerHTML = `<button id="login-btn">구글 로그인</button>`;
         document.getElementById('login-btn').onclick = () => signInWithPopup(auth, provider);
     }
+}
+
+// 홈으로 가기 로직
+function goHome() {
+    currentView = 'all';
+    document.getElementById('write-area').style.display = 'block';
+    document.getElementById('sort-area').style.display = 'flex';
+    renderAuthUI(auth.currentUser, 'all');
+    updateFeed();
+}
+
+// 내 글 보기 로직
+function showMyPosts() {
+    if (!auth.currentUser) return alert("로그인이 필요합니다!");
+    currentView = 'my';
+    document.getElementById('write-area').style.display = 'none';
+    document.getElementById('sort-area').style.display = 'none';
+    renderAuthUI(auth.currentUser, 'my');
+    updateFeed();
+}
+
+// 로고 클릭 시 홈으로
+document.getElementById('home-logo').onclick = goHome;
+
+onAuthStateChanged(auth, (user) => {
+    renderAuthUI(user, currentView);
+    updateFeed();
 });
 
-// --- 정렬 기능 ---
+// 정렬 버튼 이벤트
 document.getElementById('sort-latest').onclick = function() {
     currentSort = 'latest';
     this.classList.add('active');
@@ -59,52 +90,43 @@ document.getElementById('sort-popular').onclick = function() {
     updateFeed();
 };
 
-// --- 글쓰기 기능 ---
+// 게시물 저장
 document.getElementById('post-btn').onclick = async () => {
     const code = document.getElementById('code-input').value;
     const desc = document.getElementById('desc-input').value;
     const lang = document.getElementById('language-select').value;
     
-    if (!auth.currentUser) return alert("로그인이 필요합니다!");
+    if (!auth.currentUser) return alert("로그인 후 이용해 주세요!");
     if (!code.trim()) return alert("코드를 입력하세요!");
 
-    await addDoc(collection(db, "posts"), {
-        author: auth.currentUser.displayName,
-        uid: auth.currentUser.uid,
-        content: code,
-        description: desc,
-        language: lang,
-        createdAt: serverTimestamp(),
-        likes: [],
-        comments: []
-    });
-    
-    document.getElementById('code-input').value = "";
-    document.getElementById('desc-input').value = "";
+    try {
+        await addDoc(collection(db, "posts"), {
+            author: auth.currentUser.displayName,
+            uid: auth.currentUser.uid,
+            content: code,
+            description: desc,
+            language: lang,
+            createdAt: serverTimestamp(),
+            likes: [],
+            comments: []
+        });
+        document.getElementById('code-input').value = "";
+        document.getElementById('desc-input').value = "";
+        alert("성공적으로 공유되었습니다!");
+    } catch (e) {
+        console.error(e);
+    }
 };
 
-// --- 내 글 보기 ---
-function showMyPosts() {
-    currentView = 'my';
-    document.getElementById('write-area').style.display = 'none';
-    document.getElementById('sort-area').style.display = 'none';
-    const feed = document.getElementById('feed');
-    feed.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                        <h2>내 게시물 목록</h2>
-                        <button onclick="location.reload()">홈으로 돌아가기</button>
-                      </div>`;
-    updateFeed();
-}
-
-// --- 피드 업데이트 (핵심 로직) ---
+// 피드 업데이트
 let unsubscribe = null;
 function updateFeed() {
     if (unsubscribe) unsubscribe();
-    
     const feed = document.getElementById('feed');
     let q;
     
     if (currentView === 'my') {
+        // 내 글만 가져오기 필터
         q = query(collection(db, "posts"), where("uid", "==", auth.currentUser.uid), orderBy("createdAt", "desc"));
     } else {
         q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
@@ -114,21 +136,25 @@ function updateFeed() {
         let posts = [];
         snapshot.forEach(doc => posts.push({ id: doc.id, ...doc.data() }));
 
-        // 인기순 정렬 로직 (클라이언트 측)
         if (currentSort === 'popular') {
             posts.sort((a, b) => (b.likes?.length || 0) - (a.likes?.length || 0));
         }
 
-        if (currentView !== 'my' || posts.length > 0) feed.innerHTML = "";
-        if (currentView === 'my' && posts.length === 0) feed.innerHTML += "<p>아직 작성한 글이 없습니다.</p>";
+        feed.innerHTML = currentView === 'my' ? `<h2 style="margin-bottom:20px;">내 게시물 목록</h2>` : "";
+        
+        if (posts.length === 0) {
+            feed.innerHTML += `<p style="color:#888;">게시물이 없습니다.</p>`;
+        }
 
         posts.forEach((post) => {
-            const postDiv = createPostElement(post);
-            feed.appendChild(postDiv);
+            feed.appendChild(createPostElement(post));
         });
-        
-        // 코드 하이라이팅 적용
         document.querySelectorAll('pre code').forEach((el) => hljs.highlightElement(el));
+    }, (error) => {
+        console.error("피드 로딩 에러:", error);
+        if (error.code === 'failed-precondition') {
+            alert("Firestore 인덱스 설정이 필요합니다. 콘솔의 링크를 클릭해 인덱스를 생성하세요.");
+        }
     });
 }
 
@@ -144,7 +170,7 @@ function createPostElement(post) {
             <span><span class="lang-badge">${post.language}</span> · ${date}</span>
         </div>
         ${post.description ? `<div class="post-desc">${post.description}</div>` : ''}
-        <pre><button class="copy-btn" onclick="copyToClipboard(\`${post.content.replace(/`/g, '\\`')}\`)">복사</button><code class="language-${post.language}">${escapeHtml(post.content)}</code></pre>
+        <pre><button class="copy-btn" onclick="copyToClipboard(\`${post.content.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)">복사</button><code class="language-${post.language}">${escapeHtml(post.content)}</code></pre>
         <div class="post-footer">
             <button class="like-btn ${isLiked ? 'liked' : ''}" onclick="toggleLike('${post.id}', ${isLiked})">
                 ❤️ 좋아요 ${post.likes?.length || 0}
@@ -154,7 +180,7 @@ function createPostElement(post) {
             </button>
         </div>
         <div class="comment-section" id="comments-${post.id}">
-            <div class="comment-list" id="list-${post.id}">
+            <div class="comment-list">
                 ${post.comments?.map(c => `<div class="comment-item"><span class="comment-user">${c.user}:</span> ${c.text}</div>`).join('') || ''}
             </div>
             <div class="comment-input-area">
@@ -166,9 +192,8 @@ function createPostElement(post) {
     return div;
 }
 
-// --- 보조 기능 함수들 (Window 객체에 등록해야 HTML에서 호출 가능) ---
 window.toggleLike = async (postId, isLiked) => {
-    if (!auth.currentUser) return alert("로그인 후 이용 가능합니다!");
+    if (!auth.currentUser) return alert("로그인하세요!");
     const postRef = doc(db, "posts", postId);
     await updateDoc(postRef, {
         likes: isLiked ? arrayRemove(auth.currentUser.uid) : arrayUnion(auth.currentUser.uid)
@@ -176,7 +201,7 @@ window.toggleLike = async (postId, isLiked) => {
 };
 
 window.copyToClipboard = (text) => {
-    navigator.clipboard.writeText(text).then(() => alert("코드가 복사되었습니다!"));
+    navigator.clipboard.writeText(text).then(() => alert("복사 완료!"));
 };
 
 window.toggleComments = (postId) => {
@@ -189,8 +214,7 @@ window.addComment = async (postId) => {
     if (!auth.currentUser) return alert("로그인하세요!");
     if (!input.value.trim()) return;
 
-    const postRef = doc(db, "posts", postId);
-    await updateDoc(postRef, {
+    await updateDoc(doc(db, "posts", postId), {
         comments: arrayUnion({
             user: auth.currentUser.displayName,
             text: input.value,
@@ -205,5 +229,3 @@ function escapeHtml(text) {
     div.textContent = text;
     return div.innerHTML;
 }
-
-updateFeed();
