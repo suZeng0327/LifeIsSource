@@ -24,6 +24,30 @@ let editingPostId = null;
 let openCommentsStore = new Set();
 let myFollowingList = []; 
 
+// [추가] 글쓰기 영역 토글 기능
+const writeArea = document.getElementById('write-area');
+const openWriteBtn = document.getElementById('open-write-btn');
+const toggleArea = document.getElementById('write-toggle-area');
+const cancelWriteBtn = document.getElementById('cancel-write-btn');
+
+function showWriteTemplate() {
+    if(!auth.currentUser) {
+        alert("로그인이 필요합니다.");
+        return;
+    }
+    writeArea.style.display = 'block';
+    toggleArea.style.display = 'none';
+}
+
+function hideWriteTemplate() {
+    writeArea.style.display = 'none';
+    toggleArea.style.display = 'block';
+    resetWriteArea();
+}
+
+openWriteBtn.onclick = showWriteTemplate;
+cancelWriteBtn.onclick = hideWriteTemplate;
+
 async function syncUserData(user) {
     if (!user) return;
     const userRef = doc(db, "users", user.uid);
@@ -93,9 +117,8 @@ function goHome() {
     currentSort = 'latest';
     targetUserUid = null;
     editingPostId = null;
-    resetWriteArea();
+    hideWriteTemplate(); // 홈으로 올 때 템플릿 숨기기
     document.getElementById('user-profile-header').style.display = 'none';
-    document.getElementById('write-area').style.display = 'block';
     document.getElementById('sort-area').style.display = 'flex';
     renderAuthUI(auth.currentUser, 'all');
     updateFeed();
@@ -107,7 +130,8 @@ async function showMyPosts() {
     currentView = 'my';
     targetUserUid = auth.currentUser.uid;
 
-    document.getElementById('write-area').style.display = 'none';
+    writeArea.style.display = 'none'; // 내가 쓴 글 페이지에서도 숨기기
+    toggleArea.style.display = 'none';
     document.getElementById('sort-area').style.display = 'none';
 
     const userSnap = await getDoc(doc(db, "users", auth.currentUser.uid));
@@ -137,7 +161,8 @@ window.showUserPosts = async (uid) => {
     }
     currentView = 'user';
     targetUserUid = uid;
-    document.getElementById('write-area').style.display = 'none';
+    writeArea.style.display = 'none';
+    toggleArea.style.display = 'none';
     document.getElementById('sort-area').style.display = 'none';
     
     const userSnap = await getDoc(doc(db, "users", uid));
@@ -201,7 +226,7 @@ document.getElementById('post-btn').onclick = async () => {
             content: code, description: desc, language: lang,
             createdAt: serverTimestamp(), likes: [], comments: []
         });
-        resetWriteArea();
+        hideWriteTemplate(); // [수정] 공유 후 영역 숨기기
     } catch (e) { console.error(e); }
 };
 
@@ -304,7 +329,6 @@ function createPostElement(post) {
         </div>
     `;
     
-    // [수정] 복사 버튼 텍스트 변경 로직
     const copyBtn = div.querySelector('.copy-btn');
     copyBtn.onclick = () => {
         navigator.clipboard.writeText(post.content).then(() => {
@@ -322,10 +346,8 @@ function createPostElement(post) {
 window.startEdit = async (postId) => {
     const postDiv = document.getElementById(`post-${postId}`);
     const contentView = postDiv.querySelector('.post-content-view');
-    
     const postSnap = await getDoc(doc(db, "posts", postId));
     const data = postSnap.data();
-
     contentView.style.display = 'none';
     
     const editForm = document.createElement('div');
@@ -355,18 +377,12 @@ window.saveEdit = async (postId) => {
     const newCode = document.getElementById(`edit-code-${postId}`).value;
     const newDesc = document.getElementById(`edit-desc-${postId}`).value;
     const newLang = document.getElementById(`edit-lang-${postId}`).value;
-
     if(!newCode.trim()) return;
-
     await updateDoc(doc(db, "posts", postId), {
-        content: newCode,
-        description: newDesc,
-        language: newLang,
-        updatedAt: serverTimestamp()
+        content: newCode, description: newDesc, language: newLang, updatedAt: serverTimestamp()
     });
 };
 
-// [수정] 댓글 등록 로직 수정 (doc 중복 제거)
 window.addComment = async (postId) => {
     const input = document.getElementById(`input-${postId}`);
     if (!auth.currentUser || !input.value.trim()) return;
@@ -390,10 +406,8 @@ window.editComment = (postId, index, oldText) => {
     const commentDiv = document.getElementById(`comment-${postId}-${index}`);
     const bodyArea = commentDiv.querySelector('.comment-body');
     const actionArea = commentDiv.querySelector('.comment-actions');
-
     if (commentDiv.classList.contains('is-editing')) return;
     commentDiv.classList.add('is-editing');
-    
     actionArea.style.display = 'none'; 
     bodyArea.innerHTML = `
         <div class="inline-edit-box" style="display:flex; gap:5px; margin-top:5px; width:100%;">
