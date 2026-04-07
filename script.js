@@ -20,7 +20,18 @@ let currentView = 'all';
 let currentSort = 'latest'; 
 let editingPostId = null;
 
-// --- 네비게이션 및 UI 렌더링 ---
+// 언어 표시 이름을 변환해주는 함수
+function getLangName(lang) {
+    if (lang === 'csharp') return 'C#';
+    return lang;
+}
+
+// 정렬 버튼 색상 변경 함수
+function updateSortButtons() {
+    document.getElementById('sort-latest').classList.toggle('active', currentSort === 'latest');
+    document.getElementById('sort-popular').classList.toggle('active', currentSort === 'popular');
+}
+
 function renderAuthUI(user, viewMode = 'all') {
     const authSection = document.getElementById('auth-section');
     if (user) {
@@ -69,7 +80,6 @@ onAuthStateChanged(auth, (user) => {
     updateFeed();
 });
 
-// --- 게시물 작성 및 수정 ---
 document.getElementById('post-btn').onclick = async () => {
     const code = document.getElementById('code-input').value;
     const desc = document.getElementById('desc-input').value;
@@ -79,16 +89,14 @@ document.getElementById('post-btn').onclick = async () => {
 
     try {
         if (editingPostId) {
-            // 수정 모드
             await updateDoc(doc(db, "posts", editingPostId), {
                 content: code,
                 description: desc,
                 language: lang,
                 updatedAt: serverTimestamp()
             });
-            editingPostId = null; // ID 초기화
+            editingPostId = null;
         } else {
-            // 새 글 쓰기
             await addDoc(collection(db, "posts"), {
                 author: auth.currentUser.displayName,
                 uid: auth.currentUser.uid,
@@ -100,7 +108,7 @@ document.getElementById('post-btn').onclick = async () => {
                 comments: []
             });
         }
-        resetWriteArea(); // UI 원래대로 복구 (글자 및 타이틀 변경)
+        resetWriteArea();
     } catch (e) { console.error(e); }
 };
 
@@ -113,10 +121,11 @@ function resetWriteArea() {
     editingPostId = null;
 }
 
-// --- 피드 업데이트 ---
 function updateFeed() {
     if (window.unsubscribeFeed) window.unsubscribeFeed();
     const feed = document.getElementById('feed');
+    updateSortButtons(); // 정렬 상태에 맞춰 버튼 색상 변경
+
     let q = currentView === 'my' 
         ? query(collection(db, "posts"), where("uid", "==", auth.currentUser?.uid), orderBy("createdAt", "desc"))
         : query(collection(db, "posts"), orderBy("createdAt", "desc"));
@@ -146,7 +155,7 @@ function createPostElement(post) {
         <div class="post-header">
             <div>
                 <span class="post-author">👤 ${post.author}</span>
-                <span class="lang-badge">${post.language}</span>
+                <span class="lang-badge">${getLangName(post.language)}</span>
             </div>
             <div class="header-right">
                 <span class="post-date">${date}</span>
@@ -168,7 +177,27 @@ function createPostElement(post) {
         </div>
         <div class="comment-section" id="comments-${post.id}">
             <div class="comment-list">
-                ${post.comments?.map(c => `<div class="comment-item"><span class="comment-user">${c.user}:</span> ${c.text}</div>`).join('') || ''}
+                ${post.comments?.map((c, index) => {
+                    const isCUserLiked = c.likes?.includes(auth.currentUser?.uid);
+                    return `
+                    <div class="comment-item">
+                        <div class="comment-main">
+                            <span class="comment-user">${c.user}:</span> 
+                            <span class="comment-text" id="comment-text-${post.id}-${index}">${c.text}</span>
+                            <div class="comment-actions">
+                                ${auth.currentUser?.uid === c.uid ? `
+                                    <button class="c-edit-icon" onclick="startCommentEdit('${post.id}', ${index})">✏️</button>
+                                    <button class="c-delete-icon" onclick="deleteComment('${post.id}', ${index})">🗑️</button>
+                                ` : ''}
+                            </div>
+                        </div>
+                        <div class="comment-footer">
+                            <button class="c-like-btn ${isCUserLiked ? 'liked' : ''}" onclick="toggleCommentLike('${post.id}', ${index}, ${isCUserLiked})">
+                                ❤️ ${c.likes?.length || 0}
+                            </button>
+                        </div>
+                    </div>`;
+                }).join('') || ''}
             </div>
             <div class="comment-input-area">
                 <input type="text" id="input-${post.id}" placeholder="댓글을 입력하세요...">
@@ -184,11 +213,9 @@ function createPostElement(post) {
     return div;
 }
 
-// --- 수정/삭제/기타 기능 ---
 window.startEdit = async (postId) => {
     const postRef = doc(db, "posts", postId);
     const postSnap = await getDoc(postRef);
-    
     if (postSnap.exists()) {
         const data = postSnap.data();
         document.getElementById('code-input').value = data.content;
@@ -203,9 +230,7 @@ window.startEdit = async (postId) => {
 
 window.deletePost = async (postId) => {
     if (!confirm("정말 삭제하시겠습니까?")) return;
-    try {
-        await deleteDoc(doc(db, "posts", postId));
-    } catch (e) { console.error(e); }
+    try { await deleteDoc(doc(db, "posts", postId)); } catch (e) { console.error(e); }
 };
 
 window.toggleLike = async (postId, isLiked) => {
@@ -224,9 +249,55 @@ window.addComment = async (postId) => {
     const input = document.getElementById(`input-${postId}`);
     if (!auth.currentUser || !input.value.trim()) return;
     await updateDoc(doc(db, "posts", postId), {
-        comments: arrayUnion({ user: auth.currentUser.displayName, text: input.value, uid: auth.currentUser.uid })
+        comments: arrayUnion({ 
+            user: auth.currentUser.displayName, 
+            text: input.value, 
+            uid: auth.currentUser.uid,
+            likes: [] 
+        })
     });
     input.value = "";
+};
+
+// 댓글 수정 시작
+window.startCommentEdit = async (postId, index) => {
+    const newText = prompt("댓글을 수정하시겠습니까?");
+    if (!newText || !newText.trim()) return;
+    
+    const postRef = doc(db, "posts", postId);
+    const postSnap = await getDoc(postRef);
+    const comments = postSnap.data().comments;
+    comments[index].text = newText;
+    
+    await updateDoc(postRef, { comments });
+};
+
+// 댓글 삭제
+window.deleteComment = async (postId, index) => {
+    if (!confirm("이 댓글을 삭제하시겠습니까?")) return;
+    const postRef = doc(db, "posts", postId);
+    const postSnap = await getDoc(postRef);
+    const comments = postSnap.data().comments;
+    comments.splice(index, 1);
+    
+    await updateDoc(postRef, { comments });
+};
+
+// 댓글 좋아요 토글
+window.toggleCommentLike = async (postId, index, isLiked) => {
+    if (!auth.currentUser) return;
+    const postRef = doc(db, "posts", postId);
+    const postSnap = await getDoc(postRef);
+    const comments = postSnap.data().comments;
+    
+    if (isLiked) {
+        comments[index].likes = comments[index].likes.filter(uid => uid !== auth.currentUser.uid);
+    } else {
+        if (!comments[index].likes) comments[index].likes = [];
+        comments[index].likes.push(auth.currentUser.uid);
+    }
+    
+    await updateDoc(postRef, { comments });
 };
 
 function escapeHtml(text) {
