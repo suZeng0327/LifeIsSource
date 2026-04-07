@@ -303,11 +303,22 @@ function createPostElement(post) {
             </div>
         </div>
     `;
-    div.querySelector('.copy-btn').onclick = () => navigator.clipboard.writeText(post.content);
+    
+    // [수정] 복사 버튼 텍스트 변경 로직
+    const copyBtn = div.querySelector('.copy-btn');
+    copyBtn.onclick = () => {
+        navigator.clipboard.writeText(post.content).then(() => {
+            const originalText = copyBtn.innerText;
+            copyBtn.innerText = "✔ 복사됨";
+            setTimeout(() => {
+                copyBtn.innerText = originalText;
+            }, 2000);
+        });
+    };
+    
     return div;
 }
 
-// [수정] 게시글 바로 수정하는 인라인 수정 기능
 window.startEdit = async (postId) => {
     const postDiv = document.getElementById(`post-${postId}`);
     const contentView = postDiv.querySelector('.post-content-view');
@@ -315,7 +326,6 @@ window.startEdit = async (postId) => {
     const postSnap = await getDoc(doc(db, "posts", postId));
     const data = postSnap.data();
 
-    // 기존 뷰 숨기고 수정 폼 삽입
     contentView.style.display = 'none';
     
     const editForm = document.createElement('div');
@@ -354,13 +364,14 @@ window.saveEdit = async (postId) => {
         language: newLang,
         updatedAt: serverTimestamp()
     });
-    // updateFeed는 onSnapshot에 의해 자동 호출됨
 };
 
+// [수정] 댓글 등록 로직 수정 (doc 중복 제거)
 window.addComment = async (postId) => {
     const input = document.getElementById(`input-${postId}`);
     if (!auth.currentUser || !input.value.trim()) return;
-    await updateDoc(doc(doc(db, "posts", postId)), {
+    const postRef = doc(db, "posts", postId);
+    await updateDoc(postRef, {
         comments: arrayUnion({ user: auth.currentUser.displayName, text: input.value, uid: auth.currentUser.uid, likes: [], createdAt: Date.now() })
     });
     input.value = "";
