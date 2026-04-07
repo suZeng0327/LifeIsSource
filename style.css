@@ -104,7 +104,12 @@ main { flex: 3; min-width: 0; }
 
 .actions { text-align: right; margin-top: 25px; }
 
-.sort-options { margin-bottom: 15px; display: flex; gap: 10px; }
+/* 정렬 버튼 영역: flex 속성을 추가하여 검색창과 나란히 배치되게 함 */
+.sort-options { 
+    margin-bottom: 0; /* flex 부모 안에서 마진 조정 */
+    display: flex; 
+    gap: 10px; 
+}
 .sort-options button { background: #262626; color: #888; border: 1px solid #333; padding: 8px 18px; transition: 0.3s; }
 
 .sort-options button.active { 
@@ -214,6 +219,10 @@ code {
         margin-right: 20px;
         display: block;
     }
+    /* PC 환경에서 본문의 모바일용 검색창 숨기기 */
+    .mobile-search-area {
+        display: none !important;
+    }
 }
 
 @media screen and (max-width: 1023px) {
@@ -265,9 +274,16 @@ code {
     }
 }
 
-/* --- 검색창 전용 스타일 추가 --- */
+/* --- 검색창 전용 스타일 (팔로우 버튼 옆 배치용) --- */
 .pc-search-area {
-    margin-right: 15px;
+    margin-left: 10px; /* 팔로우 버튼과의 간격 */
+    flex-grow: 1;      /* 남은 공간 차지 */
+    max-width: 300px;  /* 너무 길어지지 않게 제한 */
+}
+
+#pc-search-input {
+    width: 100%;
+    transition: 0.3s;
 }
 
 .pc-search-area input:focus, .mobile-search-area input:focus {
@@ -278,7 +294,7 @@ code {
 
 @media screen and (max-width: 1023px) {
     .pc-search-area {
-        display: none !important; /* 모바일에서는 네비게이션 검색창 숨김 */
+        display: none !important; /* 모바일에서는 숨김 */
     }
     
     .mobile-search-area input {

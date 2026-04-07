@@ -14,10 +14,7 @@
     <nav>
         <div class="logo" id="home-logo" onclick="location.reload()" style="cursor:pointer">LifeIsSource</div>
         <div id="auth-section" style="display: flex; align-items: center; gap: 10px;">
-            <div class="search-box pc-search-area">
-                <input type="text" id="pc-search-input" placeholder="코드 검색..." style="padding: 6px 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: #fff; font-size: 0.9rem;">
             </div>
-        </div>
     </nav>
 
     <div class="container">
@@ -57,10 +54,16 @@
                 </div>
             </div>
 
-            <div class="sort-options" id="sort-area">
-                <button id="sort-latest" class="active">최신순</button>
-                <button id="sort-popular">인기순</button>
-                <button id="sort-follow">팔로우</button>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <div class="sort-options" id="sort-area" style="margin-bottom: 0;">
+                    <button id="sort-latest" class="active">최신순</button>
+                    <button id="sort-popular">인기순</button>
+                    <button id="sort-follow">팔로우</button>
+                </div>
+
+                <div class="pc-search-area">
+                    <input type="text" id="pc-search-input" placeholder="코드 검색..." style="padding: 8px 15px; border-radius: 20px; border: 1px solid #4caf50; background: #1e1e1e; color: #fff; font-size: 0.9rem; width: 250px;">
+                </div>
             </div>
 
             <div class="mobile-search-area" style="margin-bottom: 20px;">
