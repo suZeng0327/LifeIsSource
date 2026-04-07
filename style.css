@@ -264,3 +264,25 @@ code {
         font-size: 0.8rem;
     }
 }
+
+/* --- 검색창 전용 스타일 추가 --- */
+.pc-search-area {
+    margin-right: 15px;
+}
+
+.pc-search-area input:focus, .mobile-search-area input:focus {
+    outline: none;
+    border-color: #4caf50 !important;
+    box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+}
+
+@media screen and (max-width: 1023px) {
+    .pc-search-area {
+        display: none !important; /* 모바일에서는 네비게이션 검색창 숨김 */
+    }
+    
+    .mobile-search-area input {
+        font-family: inherit;
+        transition: 0.3s;
+    }
+}

@@ -22,6 +22,7 @@ let targetUserUid = null;
 let editingPostId = null;
 let openCommentsStore = new Set();
 let myFollowingList = []; 
+let searchQuery = ""; // 검색어 상태 추가
 
 updateFeed(); 
 
@@ -29,6 +30,16 @@ const writeArea = document.getElementById('write-area');
 const openWriteBtn = document.getElementById('open-write-btn');
 const toggleArea = document.getElementById('write-toggle-area');
 const cancelWriteBtn = document.getElementById('cancel-write-btn');
+
+// 검색 이벤트 리스너 추가
+document.getElementById('pc-search-input')?.addEventListener('input', (e) => {
+    searchQuery = e.target.value.toLowerCase();
+    updateFeed();
+});
+document.getElementById('mobile-search-input')?.addEventListener('input', (e) => {
+    searchQuery = e.target.value.toLowerCase();
+    updateFeed();
+});
 
 function showWriteTemplate() {
     if(!auth.currentUser) {
@@ -96,8 +107,12 @@ function renderAuthUI(user, viewMode = 'all') {
             actionBtn = `<button id="home-btn-nav" class="home-btn">홈으로</button>`;
         }
 
+        // 기존 authSection 구조에 검색창이 포함된 경우를 대비해 innerHTML 유지 및 검색창 보존 처리
         authSection.innerHTML = `
             <div class="user-info">
+                <div class="search-box pc-search-area">
+                    <input type="text" id="pc-search-input" placeholder="코드 검색..." value="${searchQuery}" style="padding: 6px 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: #fff; font-size: 0.9rem;">
+                </div>
                 ${actionBtn}
                 <span class="user-name" onclick="showMyPosts()" style="cursor:pointer">👤 ${user.displayName}님</span> 
                 <button id="logout-btn" class="logout-style">로그아웃</button>
@@ -106,9 +121,26 @@ function renderAuthUI(user, viewMode = 'all') {
         document.getElementById('logout-btn').onclick = () => signOut(auth);
         if (document.getElementById('my-posts-btn')) document.getElementById('my-posts-btn').onclick = showMyPosts;
         if (document.getElementById('home-btn-nav')) document.getElementById('home-btn-nav').onclick = goHome;
+        
+        // 검색창 이벤트 재연결 (innerHTML 교체 후 필수)
+        document.getElementById('pc-search-input').oninput = (e) => {
+            searchQuery = e.target.value.toLowerCase();
+            updateFeed();
+        };
     } else {
-        authSection.innerHTML = `<button id="login-btn">구글 로그인</button>`;
+        authSection.innerHTML = `
+            <div style="display:flex; align-items:center; gap:10px;">
+                <div class="search-box pc-search-area">
+                    <input type="text" id="pc-search-input" placeholder="코드 검색..." value="${searchQuery}" style="padding: 6px 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: #fff; font-size: 0.9rem;">
+                </div>
+                <button id="login-btn">구글 로그인</button>
+            </div>
+        `;
         document.getElementById('login-btn').onclick = () => signInWithPopup(auth, provider);
+        document.getElementById('pc-search-input').oninput = (e) => {
+            searchQuery = e.target.value.toLowerCase();
+            updateFeed();
+        };
     }
 }
 
@@ -117,6 +149,9 @@ function goHome() {
     currentSort = 'latest';
     targetUserUid = null;
     editingPostId = null;
+    searchQuery = ""; // 홈으로 갈 때 검색어 초기화
+    if(document.getElementById('pc-search-input')) document.getElementById('pc-search-input').value = "";
+    if(document.getElementById('mobile-search-input')) document.getElementById('mobile-search-input').value = "";
     hideWriteTemplate(); 
     document.getElementById('user-profile-header').style.display = 'none';
     document.getElementById('sort-area').style.display = 'flex';
@@ -263,6 +298,16 @@ function updateFeed() {
     window.unsubscribeFeed = onSnapshot(q, (snapshot) => {
         let posts = [];
         snapshot.forEach(doc => posts.push({ id: doc.id, ...doc.data() }));
+        
+        // [검색 필터링 추가] 설명이나 코드 내용에 검색어가 포함된 것만 필터링
+        if (searchQuery) {
+            posts = posts.filter(post => 
+                (post.description && post.description.toLowerCase().includes(searchQuery)) || 
+                (post.content && post.content.toLowerCase().includes(searchQuery)) ||
+                (post.author && post.author.toLowerCase().includes(searchQuery))
+            );
+        }
+
         if (currentSort === 'popular') posts.sort((a, b) => (b.likes?.length || 0) - (a.likes?.length || 0));
 
         feed.innerHTML = "";
@@ -270,7 +315,6 @@ function updateFeed() {
             feed.innerHTML = `<p style="text-align:center; margin-top:50px; color:#888;">표시할 코드가 없습니다.</p>`;
         } else {
             posts.forEach((post) => feed.appendChild(createPostElement(post)));
-            // [문법 강조 적용] 모든 코드 블록을 찾아 highlight.js 실행
             document.querySelectorAll('pre code').forEach((el) => {
                 hljs.highlightElement(el);
             });
@@ -430,7 +474,6 @@ window.editComment = (postId, index, oldText) => {
     if (commentDiv.classList.contains('is-editing')) return;
     commentDiv.classList.add('is-editing');
     
-    // 원래 내용을 저장해둠
     const originalBodyHTML = bodyArea.innerHTML;
     actionArea.style.display = 'none'; 
 
@@ -446,7 +489,6 @@ window.editComment = (postId, index, oldText) => {
         updateComment(postId, index, oldText);
     };
 
-    // 댓글 수정 취소 버튼: 원래 상태로 즉시 복구
     document.getElementById(`cancel-edit-${postId}-${index}`).onclick = () => {
         commentDiv.classList.remove('is-editing');
         bodyArea.innerHTML = originalBodyHTML;
