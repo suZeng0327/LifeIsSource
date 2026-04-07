@@ -103,7 +103,6 @@ function renderAuthUI(user, viewMode = 'all') {
             actionBtn = `<button id="home-btn-nav" class="home-btn">홈으로</button>`;
         }
 
-        // [수정 완료] span에 onclick과 cursor style을 추가하여 클릭 시 본인 페이지로 이동하게 함
         authSection.innerHTML = `
             <div class="user-info">
                 ${actionBtn}
@@ -134,18 +133,41 @@ function goHome() {
 }
 window.goHome = goHome;
 
-function showMyPosts() {
+// [수정된 부분] 내 페이지 클릭 시 사진과 동일한 디자인(홈으로 버튼만 있는 헤더)이 나오도록 수정
+async function showMyPosts() {
     if (!auth.currentUser) return;
     currentView = 'my';
-    document.getElementById('user-profile-header').style.display = 'none';
+    targetUserUid = auth.currentUser.uid; // 내 UID 설정
+
     document.getElementById('write-area').style.display = 'none';
     document.getElementById('sort-area').style.display = 'none';
+
+    // 내 정보를 가져와서 헤더 구성 (사진처럼 팔로워 수와 홈으로 버튼만 표시)
+    const userSnap = await getDoc(doc(db, "users", auth.currentUser.uid));
+    const userData = userSnap.data() || { name: auth.currentUser.displayName, followers: [] };
+
+    const header = document.getElementById('user-profile-header');
+    header.style.display = 'block';
+    header.innerHTML = `
+        <div class="profile-header-card">
+            <h2>${userData.name} 님의 페이지</h2>
+            <div class="profile-info">팔로워: <b>${userData.followers?.length || 0}</b>명</div>
+            <div style="display:flex; justify-content:center; gap:10px;">
+                <button class="home-btn" onclick="goHome()">홈으로</button>
+            </div>
+        </div>
+    `;
+
     renderAuthUI(auth.currentUser, 'my');
     updateFeed();
 }
-window.showMyPosts = showMyPosts; // 외부 호출을 위해 바인딩
+window.showMyPosts = showMyPosts;
 
 window.showUserPosts = async (uid) => {
+    if (auth.currentUser && uid === auth.currentUser.uid) {
+        showMyPosts();
+        return;
+    }
     currentView = 'user';
     targetUserUid = uid;
     document.getElementById('write-area').style.display = 'none';
