@@ -349,14 +349,12 @@ function createPostElement(post) {
     return div;
 }
 
-// [수정 핵심 부분] 취소 버튼 누르면 폼을 삭제하고 원래 내용을 보여줌
 window.startEdit = async (postId) => {
     const postDiv = document.getElementById(`post-${postId}`);
     const contentView = postDiv.querySelector('.post-content-view');
     const postSnap = await getDoc(doc(db, "posts", postId));
     const data = postSnap.data();
     
-    // 이미 수정 폼이 떠있다면 중복 생성 방지
     if (postDiv.querySelector('.inline-edit-form')) return;
 
     contentView.style.display = 'none';
@@ -384,10 +382,8 @@ window.startEdit = async (postId) => {
     `;
     postDiv.prepend(editForm);
 
-    // 수정 완료 버튼 이벤트
     document.getElementById(`save-edit-btn-${postId}`).onclick = () => saveEdit(postId);
 
-    // [취소 버튼 기능 구현] 폼을 지우고 원래 뷰를 다시 표시함
     document.getElementById(`cancel-edit-btn-${postId}`).onclick = () => {
         editForm.remove();
         contentView.style.display = 'block';
@@ -402,7 +398,6 @@ window.saveEdit = async (postId) => {
     await updateDoc(doc(db, "posts", postId), {
         content: newCode, description: newDesc, language: newLang, updatedAt: serverTimestamp()
     });
-    // 저장이 완료되면 updateFeed()가 실행되면서 자동으로 화면이 갱신됩니다.
 };
 
 window.addComment = async (postId) => {
@@ -428,16 +423,32 @@ window.editComment = (postId, index, oldText) => {
     const commentDiv = document.getElementById(`comment-${postId}-${index}`);
     const bodyArea = commentDiv.querySelector('.comment-body');
     const actionArea = commentDiv.querySelector('.comment-actions');
+    
     if (commentDiv.classList.contains('is-editing')) return;
     commentDiv.classList.add('is-editing');
+    
+    // 원래 내용을 저장해둠
+    const originalBodyHTML = bodyArea.innerHTML;
     actionArea.style.display = 'none'; 
+
     bodyArea.innerHTML = `
         <div class="inline-edit-box" style="display:flex; gap:5px; margin-top:5px; width:100%;">
             <input type="text" id="edit-input-${postId}-${index}" value="${oldText}" style="flex:1; background:#333; border:1px solid #4caf50; color:#fff; padding:5px; border-radius:4px; font-size:12px;">
-            <button onclick="updateComment('${postId}', ${index}, '${oldText}')" style="padding:2px 8px; font-size:11px; background:#4caf50; color:white; border-radius:4px;">완료</button>
-            <button onclick="updateFeed()" style="padding:2px 8px; font-size:11px; background:#555; color:white; border-radius:4px;">취소</button>
+            <button id="submit-edit-${postId}-${index}" style="padding:2px 8px; font-size:11px; background:#4caf50; color:white; border-radius:4px; border:none; cursor:pointer;">완료</button>
+            <button id="cancel-edit-${postId}-${index}" style="padding:2px 8px; font-size:11px; background:#555; color:white; border-radius:4px; border:none; cursor:pointer;">취소</button>
         </div>
     `;
+
+    document.getElementById(`submit-edit-${postId}-${index}`).onclick = () => {
+        updateComment(postId, index, oldText);
+    };
+
+    // 댓글 수정 취소 버튼: 원래 상태로 즉시 복구
+    document.getElementById(`cancel-edit-${postId}-${index}`).onclick = () => {
+        commentDiv.classList.remove('is-editing');
+        bodyArea.innerHTML = originalBodyHTML;
+        actionArea.style.display = 'flex';
+    };
 };
 
 window.updateComment = async (postId, index, oldText) => {
