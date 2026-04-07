@@ -85,7 +85,6 @@ pre { margin: 0; border-radius: 8px; font-size: 14px; position: relative; }
 .like-btn, .comment-toggle { background: none; color: #888; padding: 0; display: flex; align-items: center; gap: 5px; }
 .like-btn.liked { color: #ff5252; }
 
-/* 댓글 스타일 강화 */
 .comment-section { margin-top: 15px; background: #262626; padding: 15px; border-radius: 8px; display: none; }
 .comment-input-area { display: flex; gap: 10px; margin-bottom: 10px; }
 .comment-input-area input { flex: 1; background: #333; border: 1px solid #444; color: #fff; padding: 8px; border-radius: 4px; }
@@ -104,3 +103,13 @@ pre { margin: 0; border-radius: 8px; font-size: 14px; position: relative; }
 .comment-footer { margin-top: 5px; }
 .c-like-btn { background: none; border: 1px solid #444; color: #888; padding: 2px 6px; font-size: 0.7rem; border-radius: 4px; }
 .c-like-btn.liked { color: #ff5252; border-color: #ff5252; }
+
+/* 추가된 댓글 인라인 수정 UI 스타일 */
+.comment-edit-mode { width: 100%; display: flex; flex-direction: column; gap: 8px; }
+.edit-comment-input { 
+    width: 100%; background: #333; border: 1px solid #4caf50; 
+    color: #fff; padding: 8px; border-radius: 4px; font-family: inherit;
+}
+.edit-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.edit-actions button { padding: 4px 12px; font-size: 0.75rem; }
+.edit-actions .cancel-btn { background-color: #666; }

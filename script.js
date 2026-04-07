@@ -20,13 +20,14 @@ let currentView = 'all';
 let currentSort = 'latest'; 
 let editingPostId = null;
 
-// 언어 표시 이름을 변환해주는 함수
+// [추가] 열려 있는 댓글창 상태를 기억하기 위한 Set
+let openCommentsStore = new Set();
+
 function getLangName(lang) {
     if (lang === 'csharp') return 'C#';
     return lang;
 }
 
-// 정렬 버튼 색상 변경 함수
 function updateSortButtons() {
     document.getElementById('sort-latest').classList.toggle('active', currentSort === 'latest');
     document.getElementById('sort-popular').classList.toggle('active', currentSort === 'popular');
@@ -124,7 +125,7 @@ function resetWriteArea() {
 function updateFeed() {
     if (window.unsubscribeFeed) window.unsubscribeFeed();
     const feed = document.getElementById('feed');
-    updateSortButtons(); // 정렬 상태에 맞춰 버튼 색상 변경
+    updateSortButtons();
 
     let q = currentView === 'my' 
         ? query(collection(db, "posts"), where("uid", "==", auth.currentUser?.uid), orderBy("createdAt", "desc"))
@@ -151,6 +152,10 @@ function createPostElement(post) {
     const div = document.createElement('div');
     div.className = 'post';
     div.id = `post-${post.id}`;
+    
+    // [중요] 리렌더링 시 openCommentsStore에 ID가 있으면 표시함
+    const isCommentOpen = openCommentsStore.has(post.id) ? 'display: block;' : 'display: none;';
+
     div.innerHTML = `
         <div class="post-header">
             <div>
@@ -175,15 +180,15 @@ function createPostElement(post) {
                 💬 댓글 ${post.comments?.length || 0}
             </button>
         </div>
-        <div class="comment-section" id="comments-${post.id}">
+        <div class="comment-section" id="comments-${post.id}" style="${isCommentOpen}">
             <div class="comment-list">
                 ${post.comments?.map((c, index) => {
                     const isCUserLiked = c.likes?.includes(auth.currentUser?.uid);
                     return `
-                    <div class="comment-item">
+                    <div class="comment-item" id="comment-item-${post.id}-${index}">
                         <div class="comment-main">
                             <span class="comment-user">${c.user}:</span> 
-                            <span class="comment-text" id="comment-text-${post.id}-${index}">${c.text}</span>
+                            <span class="comment-text">${escapeHtml(c.text)}</span>
                             <div class="comment-actions">
                                 ${auth.currentUser?.uid === c.uid ? `
                                     <button class="c-edit-icon" onclick="startCommentEdit('${post.id}', ${index})">✏️</button>
@@ -240,9 +245,16 @@ window.toggleLike = async (postId, isLiked) => {
     });
 };
 
+// [수정] 댓글창 토글 시 상태 저장
 window.toggleComments = (postId) => {
     const el = document.getElementById(`comments-${postId}`);
-    el.style.display = el.style.display === 'block' ? 'none' : 'block';
+    if (el.style.display === 'block') {
+        el.style.display = 'none';
+        openCommentsStore.delete(postId);
+    } else {
+        el.style.display = 'block';
+        openCommentsStore.add(postId);
+    }
 };
 
 window.addComment = async (postId) => {
@@ -259,11 +271,29 @@ window.addComment = async (postId) => {
     input.value = "";
 };
 
-// 댓글 수정 시작
-window.startCommentEdit = async (postId, index) => {
-    const newText = prompt("댓글을 수정하시겠습니까?");
-    if (!newText || !newText.trim()) return;
+// [수정] 댓글란에서 즉시 수정 가능하도록 변경
+window.startCommentEdit = (postId, index) => {
+    const commentItem = document.getElementById(`comment-item-${postId}-${index}`);
+    const originalText = commentItem.querySelector('.comment-text').innerText;
     
+    commentItem.innerHTML = `
+        <div class="comment-edit-mode">
+            <input type="text" class="edit-comment-input" value="${originalText}">
+            <div class="edit-actions">
+                <button onclick="saveCommentEdit('${postId}', ${index})">저장</button>
+                <button class="cancel-btn" onclick="updateFeed()">취소</button>
+            </div>
+        </div>
+    `;
+};
+
+// [추가] 수정한 댓글 저장 로직
+window.saveCommentEdit = async (postId, index) => {
+    const commentItem = document.getElementById(`comment-item-${postId}-${index}`);
+    const newText = commentItem.querySelector('.edit-comment-input').value;
+    
+    if (!newText.trim()) return;
+
     const postRef = doc(db, "posts", postId);
     const postSnap = await getDoc(postRef);
     const comments = postSnap.data().comments;
@@ -272,7 +302,6 @@ window.startCommentEdit = async (postId, index) => {
     await updateDoc(postRef, { comments });
 };
 
-// 댓글 삭제
 window.deleteComment = async (postId, index) => {
     if (!confirm("이 댓글을 삭제하시겠습니까?")) return;
     const postRef = doc(db, "posts", postId);
@@ -283,17 +312,17 @@ window.deleteComment = async (postId, index) => {
     await updateDoc(postRef, { comments });
 };
 
-// 댓글 좋아요 토글
 window.toggleCommentLike = async (postId, index, isLiked) => {
     if (!auth.currentUser) return;
     const postRef = doc(db, "posts", postId);
     const postSnap = await getDoc(postRef);
-    const comments = postSnap.data().comments;
+    const comments = [...postSnap.data().comments];
+    
+    if (!comments[index].likes) comments[index].likes = [];
     
     if (isLiked) {
         comments[index].likes = comments[index].likes.filter(uid => uid !== auth.currentUser.uid);
     } else {
-        if (!comments[index].likes) comments[index].likes = [];
         comments[index].likes.push(auth.currentUser.uid);
     }
     
