@@ -1,3 +1,4 @@
+/* style.css */
 * { box-sizing: border-box; }
 body {
     margin: 0;
@@ -25,7 +26,7 @@ nav {
 
 main { flex: 3; }
 
-/* 팔로우 목록 사이드바 */
+/* 사이드바 및 팔로우/인기 목록 */
 .sidebar {
     flex: 1;
     background: #1a1a1a;
@@ -37,15 +38,23 @@ main { flex: 3; }
     top: 80px;
 }
 
+.sidebar-section { margin-bottom: 25px; }
 .sidebar h4 { margin-top: 0; color: #4caf50; border-bottom: 1px solid #333; padding-bottom: 10px; }
+
 .follow-item {
     padding: 10px;
     margin-bottom: 5px;
     border-radius: 6px;
     cursor: pointer;
     transition: 0.2s;
+    border-left: 3px solid transparent;
 }
-.follow-item:hover { background: #262626; color: #4caf50; }
+.follow-item:hover { 
+    background: #262626; 
+    color: #4caf50; 
+    border-left: 3px solid #4caf50;
+    padding-left: 12px;
+}
 
 /* 유저 프로필 헤더 */
 .profile-header-card {
@@ -96,10 +105,16 @@ main { flex: 3; }
 
 .actions { text-align: right; margin-top: 25px; }
 
+/* 정렬 옵션 버튼 스타일 */
 .sort-options { margin-bottom: 15px; display: flex; gap: 10px; }
 .sort-options button { background: #262626; color: #888; border: 1px solid #333; padding: 8px 18px; transition: 0.3s; }
-.sort-options button.active { background: #4caf50 !important; color: white !important; border-color: #4caf50 !important; }
-#sort-follow.active { background: #2196f3 !important; border-color: #2196f3 !important; }
+
+/* 활성화 상태 (중복되지 않게 script.js에서 제어되는 클래스) */
+.sort-options button.active { 
+    background-color: #4caf50 !important; 
+    color: white !important; 
+    border-color: #4caf50 !important; 
+}
 
 button {
     background-color: #4caf50; color: white; border: none;
@@ -111,6 +126,7 @@ button:hover { filter: brightness(1.1); }
 .my-posts-btn { background-color: #2196f3 !important; }
 .home-btn { background-color: #607d8b !important; }
 
+/* 게시물 스타일 */
 .post {
     background-color: #1a1a1a; padding: 20px; border-radius: 12px;
     margin-bottom: 25px; border: 1px solid #333;
@@ -138,13 +154,33 @@ pre { margin: 0; border-radius: 8px; font-size: 14px; position: relative; }
 .like-btn, .comment-toggle { background: none; color: #888; padding: 0; display: flex; align-items: center; gap: 5px; }
 .like-btn.liked { color: #ff5252; }
 
+/* 댓글 섹션 보강 */
 .comment-section { margin-top: 15px; background: #262626; padding: 15px; border-radius: 8px; display: none; }
-.comment-input-area { display: flex; gap: 10px; margin-bottom: 10px; }
+.comment-input-area { display: flex; gap: 10px; margin-bottom: 15px; }
 .comment-input-area input { flex: 1; background: #333; border: 1px solid #444; color: #fff; padding: 8px; border-radius: 4px; }
 
 .comment-item { 
     font-size: 0.85rem; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #333; 
 }
-.comment-main { display: flex; justify-content: space-between; align-items: flex-start; }
+.comment-main { display: flex; justify-content: space-between; align-items: center; }
 .comment-user { color: #4caf50; font-weight: bold; margin-right: 5px; }
 .comment-text { color: #ddd; flex: 1; word-break: break-all; }
+
+/* 댓글 액션 버튼 (수정/삭제/좋아요) */
+.comment-actions { display: flex; gap: 10px; align-items: center; }
+.comment-actions button { 
+    background: none; padding: 0; font-size: 11px; color: #777; font-weight: normal; 
+}
+.comment-actions button:hover { color: #4caf50; text-decoration: underline; }
+
+/* 더보기 버튼 스타일 */
+#more-users-btn {
+    background-color: #333;
+    color: #bbb;
+    border: 1px solid #444;
+    transition: 0.2s;
+}
+#more-users-btn:hover {
+    background-color: #444;
+    color: #fff;
+}
