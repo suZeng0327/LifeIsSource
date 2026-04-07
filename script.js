@@ -413,16 +413,23 @@ window.editComment = (postId, index, oldText) => {
     bodyArea.innerHTML = `
         <div class="inline-edit-box" style="display:flex; gap:5px; margin-top:5px; width:100%;">
             <input type="text" id="edit-input-${postId}-${index}" value="${oldText}" style="flex:1; background:#333; border:1px solid #4caf50; color:#fff; padding:5px; border-radius:4px; font-size:12px;">
-            <button onclick="updateComment('${postId}', ${index})" style="padding:2px 8px; font-size:11px; background:#4caf50; color:white; border-radius:4px;">완료</button>
+            <button onclick="updateComment('${postId}', ${index}, '${oldText}')" style="padding:2px 8px; font-size:11px; background:#4caf50; color:white; border-radius:4px;">완료</button>
             <button onclick="updateFeed()" style="padding:2px 8px; font-size:11px; background:#555; color:white; border-radius:4px;">취소</button>
         </div>
     `;
 };
 
-window.updateComment = async (postId, index) => {
+window.updateComment = async (postId, index, oldText) => {
     const input = document.getElementById(`edit-input-${postId}-${index}`);
     const newText = input.value.trim();
     if (!newText) return;
+    
+    // 수정 내용이 없거나 기존과 같으면 그냥 화면 갱신해서 수정창 닫기
+    if (newText === oldText) {
+        updateFeed();
+        return;
+    }
+
     const postRef = doc(db, "posts", postId);
     const postSnap = await getDoc(postRef);
     const comments = postSnap.data().comments;
