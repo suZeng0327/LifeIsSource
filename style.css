@@ -109,6 +109,7 @@ main { flex: 3; min-width: 0; }
     margin-bottom: 0; /* flex 부모 안에서 마진 조정 */
     display: flex; 
     gap: 10px; 
+    align-items: center; /* 세로 중앙 정렬 유지 */
 }
 .sort-options button { background: #262626; color: #888; border: 1px solid #333; padding: 8px 18px; transition: 0.3s; }
 
@@ -267,14 +268,32 @@ code {
         margin-bottom: 15px;
     }
 
+    /* 모바일 정렬 버튼 크기 최적화 및 검색창 공간 확보 */
     .sort-options button {
-        flex: 1;
-        padding: 8px 5px;
+        flex: 0 0 auto; /* 버튼 크기 고정 */
+        padding: 8px 12px;
         font-size: 0.8rem;
+    }
+
+    /* 모바일 본문 검색창을 팔로우 버튼 옆으로 배치 */
+    .mobile-search-area {
+        flex: 1; /* 남은 가로 공간을 다 채움 */
+        display: block !important;
+    }
+
+    .mobile-search-area input {
+        width: 100%;
+        height: 35px; /* 정렬 버튼들과 높이 맞춤 */
+        background: #262626;
+        border: 1px solid #333;
+        border-radius: 6px;
+        color: #fff;
+        font-size: 0.8rem;
+        padding: 0 10px;
     }
 }
 
-/* --- 검색창 전용 스타일 (팔로우 버튼 옆 배치용) --- */
+/* --- 검색창 전용 스타일 (상단 팔로우 버튼 옆 PC용) --- */
 .pc-search-area {
     margin-left: 10px; /* 팔로우 버튼과의 간격 */
     flex-grow: 1;      /* 남은 공간 차지 */
@@ -283,6 +302,10 @@ code {
 
 #pc-search-input {
     width: 100%;
+    background: #262626;
+    border: 1px solid #333;
+    border-radius: 6px;
+    color: #fff;
     transition: 0.3s;
 }
 
@@ -294,7 +317,7 @@ code {
 
 @media screen and (max-width: 1023px) {
     .pc-search-area {
-        display: none !important; /* 모바일에서는 숨김 */
+        display: none !important; /* 모바일 네비바 검색창은 숨김 */
     }
     
     .mobile-search-area input {
