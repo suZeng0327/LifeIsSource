@@ -270,7 +270,10 @@ function updateFeed() {
             feed.innerHTML = `<p style="text-align:center; margin-top:50px; color:#888;">표시할 코드가 없습니다.</p>`;
         } else {
             posts.forEach((post) => feed.appendChild(createPostElement(post)));
-            document.querySelectorAll('pre code').forEach((el) => hljs.highlightElement(el));
+            // [문법 강조 적용] 모든 코드 블록을 찾아 highlight.js 실행
+            document.querySelectorAll('pre code').forEach((el) => {
+                hljs.highlightElement(el);
+            });
         }
     }, (error) => {
         console.error("Feed Load Error: ", error);
