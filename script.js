@@ -103,10 +103,11 @@ function renderAuthUI(user, viewMode = 'all') {
             actionBtn = `<button id="home-btn-nav" class="home-btn">홈으로</button>`;
         }
 
+        // [수정 완료] span에 onclick과 cursor style을 추가하여 클릭 시 본인 페이지로 이동하게 함
         authSection.innerHTML = `
             <div class="user-info">
                 ${actionBtn}
-                <span class="user-name">👤 ${user.displayName}님</span> 
+                <span class="user-name" onclick="showMyPosts()" style="cursor:pointer">👤 ${user.displayName}님</span> 
                 <button id="logout-btn" class="logout-style">로그아웃</button>
             </div>
         `;
@@ -142,6 +143,7 @@ function showMyPosts() {
     renderAuthUI(auth.currentUser, 'my');
     updateFeed();
 }
+window.showMyPosts = showMyPosts; // 외부 호출을 위해 바인딩
 
 window.showUserPosts = async (uid) => {
     currentView = 'user';
@@ -338,17 +340,15 @@ window.deleteComment = async (postId, index) => {
     await updateDoc(postRef, { comments });
 };
 
-// [수정] 알림창 없이 댓글란에서 즉시 수정 모드 전환
 window.editComment = (postId, index, oldText) => {
     const commentDiv = document.getElementById(`comment-${postId}-${index}`);
     const bodyArea = commentDiv.querySelector('.comment-body');
     const actionArea = commentDiv.querySelector('.comment-actions');
 
-    // 이미 수정 중이면 중복 처리 안함
     if (commentDiv.classList.contains('is-editing')) return;
     commentDiv.classList.add('is-editing');
     
-    actionArea.style.display = 'none'; // 기존 아이콘 숨김
+    actionArea.style.display = 'none'; 
     bodyArea.innerHTML = `
         <div class="inline-edit-box" style="display:flex; gap:5px; margin-top:5px; width:100%;">
             <input type="text" id="edit-input-${postId}-${index}" value="${oldText}" style="flex:1; background:#333; border:1px solid #4caf50; color:#fff; padding:5px; border-radius:4px; font-size:12px;">
@@ -358,7 +358,6 @@ window.editComment = (postId, index, oldText) => {
     `;
 };
 
-// [신규] 수정한 내용 저장
 window.updateComment = async (postId, index) => {
     const input = document.getElementById(`edit-input-${postId}-${index}`);
     const newText = input.value.trim();
@@ -370,7 +369,6 @@ window.updateComment = async (postId, index) => {
     comments[index].text = newText;
     
     await updateDoc(postRef, { comments });
-    // onSnapshot이 감지해서 자동으로 다시 그림
 };
 
 window.toggleCommentLike = async (postId, index) => {
