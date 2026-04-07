@@ -64,6 +64,8 @@ button {
     font-weight: bold; font-family: inherit;
 }
 button:hover { filter: brightness(1.1); }
+
+/* 로그아웃 및 전용 버튼들 */
 .logout-style { background-color: #ff5252 !important; }
 .my-posts-btn { background-color: #2196f3 !important; }
 .home-btn { background-color: #607d8b !important; }
@@ -73,15 +75,52 @@ button:hover { filter: brightness(1.1); }
     background-color: #1a1a1a; padding: 20px; border-radius: 12px;
     margin-bottom: 25px; border: 1px solid #333;
 }
-.post-header { display: flex; justify-content: space-between; color: #888; font-size: 0.85rem; margin-bottom: 12px; }
+
+/* 포스트 헤더: 작성자 정보와 수정/삭제 버튼 배치 */
+.post-header { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+    color: #888; 
+    font-size: 0.85rem; 
+    margin-bottom: 12px; 
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.post-author { color: #fff; font-weight: bold; margin-right: 8px; }
+.post-date { font-size: 0.75rem; color: #666; }
+
+/* 수정/삭제 버튼 스타일 */
+.edit-btn, .delete-btn {
+    padding: 4px 10px; 
+    font-size: 0.75rem; 
+    border-radius: 4px; 
+    color: #fff;
+    transition: 0.2s;
+}
+.edit-btn { background-color: #ff9800 !important; }
+.delete-btn { background-color: #f44336 !important; }
+.edit-btn:hover, .delete-btn:hover { filter: contrast(1.5); }
+
 .post-desc { margin: 15px 0; color: #bbb; line-height: 1.5; border-left: 3px solid #4caf50; padding-left: 12px; }
 .lang-badge { background: #333; padding: 2px 8px; border-radius: 4px; color: #4caf50; font-size: 0.75rem; }
 
 pre { margin: 0; border-radius: 8px; font-size: 14px; position: relative; }
+
+/* 복사 버튼: 코드 길이에 상관없이 잘 보이도록 조정 */
 .copy-btn {
-    position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,0.1);
+    position: absolute; top: 10px; right: 10px; 
+    background: rgba(255, 255, 255, 0.15) !important;
     font-size: 11px; padding: 4px 8px; color: #fff; border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    z-index: 5;
 }
+.copy-btn:hover { background: rgba(255, 255, 255, 0.25) !important; }
 
 .post-footer { display: flex; gap: 20px; margin-top: 15px; padding-top: 15px; border-top: 1px solid #333; }
 .like-btn, .comment-toggle { background: none; color: #888; padding: 0; display: flex; align-items: center; gap: 5px; }
