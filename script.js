@@ -360,7 +360,8 @@ window.startEdit = async (postId) => {
                 <option value="cpp" ${data.language==='cpp'?'selected':''}>C++</option>
                 <option value="python" ${data.language==='python'?'selected':''}>Python</option>
                 <option value="c#" ${data.language==='c#'?'selected':''}>C#</option>
-                <option value="javascript" ${data.language==='javascript'?'selected':''}>JS</option>
+                <option value="java" ${data.language==='java'?'selected':''}>Java</option>
+                <option value="javascript" ${data.language==='javascript'?'selected':''}>JavaScript</option>
             </select>
         </div>
         <textarea id="edit-code-${postId}" style="width:100%; height:200px; background:#1e1e1e; color:#9cdcfe; border:1px solid #4caf50; padding:10px; border-radius:8px; font-family:monospace; margin-bottom:10px;">${data.content}</textarea>
