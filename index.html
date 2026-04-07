@@ -54,20 +54,16 @@
                 </div>
             </div>
 
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <div class="sort-options" id="sort-area" style="margin-bottom: 0;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 15px;">
+                <div class="sort-options" id="sort-area" style="margin-bottom: 0; flex-shrink: 0;">
                     <button id="sort-latest" class="active">최신순</button>
                     <button id="sort-popular">인기순</button>
                     <button id="sort-follow">팔로우</button>
                 </div>
 
-                <div class="pc-search-area">
-                    <input type="text" id="pc-search-input" placeholder="코드 검색..." style="padding: 8px 15px; border-radius: 20px; border: 1px solid #4caf50; background: #1e1e1e; color: #fff; font-size: 0.9rem; width: 250px;">
+                <div class="mobile-search-area" style="flex-grow: 1;">
+                    <input type="text" id="mobile-search-input" placeholder="찾고 싶은 코드를 검색해 보세요" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #4caf50; background: #1e1e1e; color: #fff; box-sizing: border-box;">
                 </div>
-            </div>
-
-            <div class="mobile-search-area" style="margin-bottom: 20px;">
-                <input type="text" id="mobile-search-input" placeholder="찾고 싶은 코드를 검색해 보세요" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #4caf50; background: #1e1e1e; color: #fff; box-sizing: border-box;">
             </div>
 
             <div id="feed"></div>
