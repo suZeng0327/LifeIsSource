@@ -1,4 +1,3 @@
-// script.js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, updateDoc, doc, arrayUnion, arrayRemove, where, deleteDoc, getDoc, setDoc, limit, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -24,7 +23,9 @@ let editingPostId = null;
 let openCommentsStore = new Set();
 let myFollowingList = []; 
 
-// [추가] 글쓰기 영역 토글 기능
+// [수정] 초기 실행: 페이지 로드 즉시 피드를 먼저 불러옵니다. (멈춤 현상 방지)
+updateFeed(); 
+
 const writeArea = document.getElementById('write-area');
 const openWriteBtn = document.getElementById('open-write-btn');
 const toggleArea = document.getElementById('write-toggle-area');
@@ -117,7 +118,7 @@ function goHome() {
     currentSort = 'latest';
     targetUserUid = null;
     editingPostId = null;
-    hideWriteTemplate(); // 홈으로 올 때 템플릿 숨기기
+    hideWriteTemplate(); 
     document.getElementById('user-profile-header').style.display = 'none';
     document.getElementById('sort-area').style.display = 'flex';
     renderAuthUI(auth.currentUser, 'all');
@@ -130,7 +131,7 @@ async function showMyPosts() {
     currentView = 'my';
     targetUserUid = auth.currentUser.uid;
 
-    writeArea.style.display = 'none'; // 내가 쓴 글 페이지에서도 숨기기
+    writeArea.style.display = 'none'; 
     toggleArea.style.display = 'none';
     document.getElementById('sort-area').style.display = 'none';
 
@@ -207,10 +208,12 @@ window.toggleFollow = async (uid, name, isFollowing) => {
 
 document.getElementById('home-logo').onclick = goHome;
 
+// [수정] 인증 상태 감시 함수: 데이터 로딩과 인증 UI 갱신을 분리하여 실행합니다.
 onAuthStateChanged(auth, (user) => {
     syncUserData(user);
     renderAuthUI(user, currentView);
-    updateFeed();
+    // 로그인 상태가 변했을 때(로그인/로그아웃)만 피드를 한 번 더 갱신해줍니다.
+    updateFeed(); 
 });
 
 document.getElementById('post-btn').onclick = async () => {
@@ -226,7 +229,7 @@ document.getElementById('post-btn').onclick = async () => {
             content: code, description: desc, language: lang,
             createdAt: serverTimestamp(), likes: [], comments: []
         });
-        hideWriteTemplate(); // [수정] 공유 후 영역 숨기기
+        hideWriteTemplate(); 
     } catch (e) { console.error(e); }
 };
 
@@ -245,11 +248,12 @@ function updateFeed() {
     updateSortButtons();
 
     let q;
-    if (currentView === 'my') {
-        q = query(collection(db, "posts"), where("uid", "==", auth.currentUser?.uid), orderBy("createdAt", "desc"));
+    // [수정] 인증 정보가 없더라도 기본 'all' 뷰는 로드될 수 있도록 조건을 체크합니다.
+    if (currentView === 'my' && auth.currentUser) {
+        q = query(collection(db, "posts"), where("uid", "==", auth.currentUser.uid), orderBy("createdAt", "desc"));
     } else if (currentView === 'user') {
         q = query(collection(db, "posts"), where("uid", "==", targetUserUid), orderBy("createdAt", "desc"));
-    } else if (currentView === 'follow') {
+    } else if (currentView === 'follow' && auth.currentUser) {
         const followUids = myFollowingList.map(u => u.uid);
         if (followUids.length === 0) {
             feed.innerHTML = `<p style="text-align:center; margin-top:50px; color:#888;">팔로우한 사람이 없습니다.</p>`;
@@ -257,6 +261,7 @@ function updateFeed() {
         }
         q = query(collection(db, "posts"), where("uid", "in", followUids), orderBy("createdAt", "desc"));
     } else {
+        // 기본 전체 피드 로드
         q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
     }
 
@@ -266,8 +271,14 @@ function updateFeed() {
         if (currentSort === 'popular') posts.sort((a, b) => (b.likes?.length || 0) - (a.likes?.length || 0));
 
         feed.innerHTML = "";
-        posts.forEach((post) => feed.appendChild(createPostElement(post)));
-        document.querySelectorAll('pre code').forEach((el) => hljs.highlightElement(el));
+        if (posts.length === 0) {
+            feed.innerHTML = `<p style="text-align:center; margin-top:50px; color:#888;">표시할 코드가 없습니다.</p>`;
+        } else {
+            posts.forEach((post) => feed.appendChild(createPostElement(post)));
+            document.querySelectorAll('pre code').forEach((el) => hljs.highlightElement(el));
+        }
+    }, (error) => {
+        console.error("Feed Load Error: ", error);
     });
 }
 
@@ -419,7 +430,6 @@ window.editComment = (postId, index, oldText) => {
     `;
 };
 
-// [수정] 댓글 수정 취소 전용 함수 추가
 window.cancelEditComment = () => {
     updateFeed();
 };
@@ -429,7 +439,6 @@ window.updateComment = async (postId, index, oldText) => {
     const newText = input.value.trim();
     if (!newText) return;
     
-    // 수정 내용이 없거나 기존과 같으면 그냥 화면 갱신해서 수정창 닫기
     if (newText === oldText) {
         updateFeed();
         return;
