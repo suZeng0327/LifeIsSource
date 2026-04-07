@@ -1,4 +1,4 @@
-/* style.css (기존 코드 유지 및 하단 수정) */
+/* style.css */
 * { box-sizing: border-box; }
 body {
     margin: 0;
@@ -159,13 +159,34 @@ pre { margin: 0; border-radius: 8px; font-size: 14px; position: relative; }
 .comment-user { color: #4caf50; font-weight: bold; margin-right: 5px; }
 .comment-text { color: #ddd; flex: 1; word-break: break-all; }
 
-/* [수정] 댓글 액션 버튼 - 아이콘 스타일 적용 */
 .comment-actions { display: flex; gap: 12px; align-items: center; margin-left: 10px; }
 .comment-actions button { 
     background: none; padding: 0; font-size: 14px; color: #777; font-weight: normal; 
     transition: 0.2s; min-width: 15px;
 }
 .comment-actions button:hover { color: #4caf50; transform: scale(1.2); }
+
+/* [추가] 게시글 인라인 수정 폼 스타일 */
+.inline-edit-form {
+    background: #1e1e1e;
+    padding: 20px;
+    border-radius: 10px;
+    border: 1px solid #4caf50;
+    margin-bottom: 15px;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.inline-edit-form select:focus, 
+.inline-edit-form textarea:focus, 
+.inline-edit-form input:focus {
+    outline: none;
+    border-color: #81c784;
+}
 
 #more-users-btn {
     background-color: #333;

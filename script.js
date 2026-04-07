@@ -23,7 +23,6 @@ let targetUserUid = null;
 let editingPostId = null;
 let openCommentsStore = new Set();
 let myFollowingList = []; 
-let showAllPopular = false;
 
 async function syncUserData(user) {
     if (!user) return;
@@ -36,36 +35,6 @@ async function syncUserData(user) {
         myFollowingList = doc.data()?.following || [];
         renderFollowSidebar();
     });
-    renderPopularUsers();
-}
-
-async function renderPopularUsers() {
-    const userListEl = document.getElementById('popular-users-list');
-    const moreBtn = document.getElementById('more-users-btn');
-    
-    const usersRef = collection(db, "users");
-    const q = query(usersRef); 
-    const querySnapshot = await getDocs(q);
-    
-    let users = [];
-    querySnapshot.forEach(doc => {
-        users.push({ uid: doc.id, ...doc.data() });
-    });
-
-    users.sort((a, b) => (b.followers?.length || 0) - (a.followers?.length || 0));
-
-    const displayUsers = showAllPopular ? users : users.slice(0, 10);
-    
-    userListEl.innerHTML = displayUsers.map(u => `
-        <div class="follow-item" onclick="showUserPosts('${u.uid}')">🔥 ${u.name} (${u.followers?.length || 0})</div>
-    `).join('');
-
-    if (users.length > 10 && !showAllPopular) {
-        moreBtn.style.display = 'block';
-        moreBtn.onclick = () => { showAllPopular = true; renderPopularUsers(); };
-    } else {
-        moreBtn.style.display = 'none';
-    }
 }
 
 function renderFollowSidebar() {
@@ -133,16 +102,14 @@ function goHome() {
 }
 window.goHome = goHome;
 
-// [수정된 부분] 내 페이지 클릭 시 사진과 동일한 디자인(홈으로 버튼만 있는 헤더)이 나오도록 수정
 async function showMyPosts() {
     if (!auth.currentUser) return;
     currentView = 'my';
-    targetUserUid = auth.currentUser.uid; // 내 UID 설정
+    targetUserUid = auth.currentUser.uid;
 
     document.getElementById('write-area').style.display = 'none';
     document.getElementById('sort-area').style.display = 'none';
 
-    // 내 정보를 가져와서 헤더 구성 (사진처럼 팔로워 수와 홈으로 버튼만 표시)
     const userSnap = await getDoc(doc(db, "users", auth.currentUser.uid));
     const userData = userSnap.data() || { name: auth.currentUser.displayName, followers: [] };
 
@@ -228,19 +195,12 @@ document.getElementById('post-btn').onclick = async () => {
     if (!auth.currentUser || !code.trim()) return;
 
     try {
-        if (editingPostId) {
-            await updateDoc(doc(db, "posts", editingPostId), {
-                content: code, description: desc, language: lang, updatedAt: serverTimestamp()
-            });
-            editingPostId = null;
-        } else {
-            await addDoc(collection(db, "posts"), {
-                author: auth.currentUser.displayName,
-                uid: auth.currentUser.uid,
-                content: code, description: desc, language: lang,
-                createdAt: serverTimestamp(), likes: [], comments: []
-            });
-        }
+        await addDoc(collection(db, "posts"), {
+            author: auth.currentUser.displayName,
+            uid: auth.currentUser.uid,
+            content: code, description: desc, language: lang,
+            createdAt: serverTimestamp(), likes: [], comments: []
+        });
         resetWriteArea();
     } catch (e) { console.error(e); }
 };
@@ -292,27 +252,30 @@ function createPostElement(post) {
     const date = post.createdAt?.toDate().toLocaleString() || "방금 전";
     const div = document.createElement('div');
     div.className = 'post';
+    div.id = `post-${post.id}`;
     const isCommentOpen = openCommentsStore.has(post.id) ? 'display: block;' : 'display: none;';
 
     div.innerHTML = `
-        <div class="post-header">
-            <div>
-                <span class="post-author" onclick="showUserPosts('${post.uid}')" style="cursor:pointer">👤 ${post.author}</span>
-                <span class="lang-badge">${post.language}</span>
+        <div class="post-content-view">
+            <div class="post-header">
+                <div>
+                    <span class="post-author" onclick="showUserPosts('${post.uid}')" style="cursor:pointer">👤 ${post.author}</span>
+                    <span class="lang-badge">${post.language}</span>
+                </div>
+                <div class="header-right">
+                    <span class="post-date">${date}</span>
+                    ${isOwner ? `
+                        <button class="edit-btn" onclick="startEdit('${post.id}')">수정</button>
+                        <button class="delete-btn" onclick="deletePost('${post.id}')">삭제</button>
+                    ` : ''}
+                </div>
             </div>
-            <div class="header-right">
-                <span class="post-date">${date}</span>
-                ${isOwner ? `
-                    <button class="edit-btn" onclick="startEdit('${post.id}')">수정</button>
-                    <button class="delete-btn" onclick="deletePost('${post.id}')">삭제</button>
-                ` : ''}
+            ${post.description ? `<div class="post-desc">${post.description}</div>` : ''}
+            <pre><button class="copy-btn">복사</button><code class="language-${post.language}">${escapeHtml(post.content)}</code></pre>
+            <div class="post-footer">
+                <button class="like-btn ${isLiked ? 'liked' : ''}" onclick="toggleLike('${post.id}', ${isLiked})">❤️ 좋아요 ${post.likes?.length || 0}</button>
+                <button class="comment-toggle" onclick="toggleComments('${post.id}')">💬 댓글 ${post.comments?.length || 0}</button>
             </div>
-        </div>
-        ${post.description ? `<div class="post-desc">${post.description}</div>` : ''}
-        <pre><button class="copy-btn">복사</button><code class="language-${post.language}">${escapeHtml(post.content)}</code></pre>
-        <div class="post-footer">
-            <button class="like-btn ${isLiked ? 'liked' : ''}" onclick="toggleLike('${post.id}', ${isLiked})">❤️ 좋아요 ${post.likes?.length || 0}</button>
-            <button class="comment-toggle" onclick="toggleComments('${post.id}')">💬 댓글 ${post.comments?.length || 0}</button>
         </div>
         <div class="comment-section" id="comments-${post.id}" style="${isCommentOpen}">
             <div class="comment-list">
@@ -344,10 +307,60 @@ function createPostElement(post) {
     return div;
 }
 
+// [수정] 게시글 바로 수정하는 인라인 수정 기능
+window.startEdit = async (postId) => {
+    const postDiv = document.getElementById(`post-${postId}`);
+    const contentView = postDiv.querySelector('.post-content-view');
+    
+    const postSnap = await getDoc(doc(db, "posts", postId));
+    const data = postSnap.data();
+
+    // 기존 뷰 숨기고 수정 폼 삽입
+    contentView.style.display = 'none';
+    
+    const editForm = document.createElement('div');
+    editForm.className = 'inline-edit-form';
+    editForm.innerHTML = `
+        <div style="margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+            <strong style="color:#4caf50;">게시글 수정</strong>
+            <select id="edit-lang-${postId}" style="background:#333; color:#fff; border:none; padding:4px; border-radius:4px;">
+                <option value="c" ${data.language==='c'?'selected':''}>C</option>
+                <option value="cpp" ${data.language==='cpp'?'selected':''}>C++</option>
+                <option value="python" ${data.language==='python'?'selected':''}>Python</option>
+                <option value="c#" ${data.language==='c#'?'selected':''}>C#</option>
+                <option value="javascript" ${data.language==='javascript'?'selected':''}>JS</option>
+            </select>
+        </div>
+        <textarea id="edit-code-${postId}" style="width:100%; height:200px; background:#1e1e1e; color:#9cdcfe; border:1px solid #4caf50; padding:10px; border-radius:8px; font-family:monospace; margin-bottom:10px;">${data.content}</textarea>
+        <input type="text" id="edit-desc-${postId}" value="${data.description || ''}" style="width:100%; background:#262626; border:1px solid #444; color:#fff; padding:8px; border-radius:4px; margin-bottom:10px;">
+        <div style="text-align:right; gap:10px; display:flex; justify-content:flex-end;">
+            <button onclick="saveEdit('${postId}')" style="background:#4caf50; font-size:12px;">수정 완료</button>
+            <button onclick="updateFeed()" style="background:#555; font-size:12px;">취소</button>
+        </div>
+    `;
+    postDiv.prepend(editForm);
+};
+
+window.saveEdit = async (postId) => {
+    const newCode = document.getElementById(`edit-code-${postId}`).value;
+    const newDesc = document.getElementById(`edit-desc-${postId}`).value;
+    const newLang = document.getElementById(`edit-lang-${postId}`).value;
+
+    if(!newCode.trim()) return;
+
+    await updateDoc(doc(db, "posts", postId), {
+        content: newCode,
+        description: newDesc,
+        language: newLang,
+        updatedAt: serverTimestamp()
+    });
+    // updateFeed는 onSnapshot에 의해 자동 호출됨
+};
+
 window.addComment = async (postId) => {
     const input = document.getElementById(`input-${postId}`);
     if (!auth.currentUser || !input.value.trim()) return;
-    await updateDoc(doc(db, "posts", postId), {
+    await updateDoc(doc(doc(db, "posts", postId)), {
         comments: arrayUnion({ user: auth.currentUser.displayName, text: input.value, uid: auth.currentUser.uid, likes: [], createdAt: Date.now() })
     });
     input.value = "";
@@ -384,12 +397,10 @@ window.updateComment = async (postId, index) => {
     const input = document.getElementById(`edit-input-${postId}-${index}`);
     const newText = input.value.trim();
     if (!newText) return;
-
     const postRef = doc(db, "posts", postId);
     const postSnap = await getDoc(postRef);
     const comments = postSnap.data().comments;
     comments[index].text = newText;
-    
     await updateDoc(postRef, { comments });
 };
 
@@ -422,17 +433,6 @@ window.toggleComments = (postId) => {
 
 window.deletePost = async (postId) => {
     if (confirm("정말 삭제하시겠습니까?")) await deleteDoc(doc(db, "posts", postId));
-};
-
-window.startEdit = async (postId) => {
-    const postSnap = await getDoc(doc(db, "posts", postId));
-    const data = postSnap.data();
-    document.getElementById('code-input').value = data.content;
-    document.getElementById('desc-input').value = data.description;
-    document.getElementById('language-select').value = data.language;
-    editingPostId = postId;
-    document.getElementById('post-btn').innerText = "수정 완료";
-    window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
 function escapeHtml(text) {
