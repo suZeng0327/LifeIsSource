@@ -31,7 +31,7 @@ const openWriteBtn = document.getElementById('open-write-btn');
 const toggleArea = document.getElementById('write-toggle-area');
 const cancelWriteBtn = document.getElementById('cancel-write-btn');
 
-// 본문 통합 검색창 이벤트 리스너 (기존 pc-search-input 리스너는 HTML에서 삭제되었으므로 안전하게 처리)
+// 본문 통합 검색창 이벤트 리스너
 document.getElementById('mobile-search-input')?.addEventListener('input', (e) => {
     searchQuery = e.target.value.toLowerCase();
     updateFeed();
@@ -70,11 +70,18 @@ async function syncUserData(user) {
 
 function renderFollowSidebar() {
     const listEl = document.getElementById('follow-list');
-    if (!auth.currentUser) { listEl.innerHTML = "로그인이 필요합니다."; return; }
+    if (!auth.currentUser) { listEl.textContent = "로그인이 필요합니다."; return; }
     if (myFollowingList.length === 0) { listEl.innerHTML = "<p>팔로우한 유저가 없습니다.</p>"; return; }
-    listEl.innerHTML = myFollowingList.map(u => `
-        <div class="follow-item" onclick="showUserPosts('${u.uid}')">👤 ${u.name}</div>
-    `).join('');
+    
+    // 리스트 초기화 후 안전하게 추가
+    listEl.innerHTML = "";
+    myFollowingList.forEach(u => {
+        const item = document.createElement('div');
+        item.className = 'follow-item';
+        item.textContent = `👤 ${u.name}`;
+        item.onclick = () => showUserPosts(u.uid);
+        listEl.appendChild(item);
+    });
 }
 
 function updateSortButtons() {
@@ -95,33 +102,53 @@ function updateSortButtons() {
     }
 }
 
-// 상단 네비바 UI 렌더링: 중복 검색창(pc-search-area)을 완전히 제거함
 function renderAuthUI(user, viewMode = 'all') {
     const authSection = document.getElementById('auth-section');
+    authSection.innerHTML = ""; // 초기화
+
     if (user) {
-        let actionBtn = `<button id="my-posts-btn" class="my-posts-btn">내가 쓴 글</button>`;
+        const userInfo = document.createElement('div');
+        userInfo.className = 'user-info';
+
+        const actionBtn = document.createElement('button');
         if (viewMode === 'my' || viewMode === 'user') {
-            actionBtn = `<button id="home-btn-nav" class="home-btn">홈으로</button>`;
+            actionBtn.className = 'home-btn';
+            actionBtn.textContent = '홈으로';
+            actionBtn.onclick = goHome;
+        } else {
+            actionBtn.className = 'my-posts-btn';
+            actionBtn.textContent = '내가 쓴 글';
+            actionBtn.onclick = showMyPosts;
         }
 
-        authSection.innerHTML = `
-            <div class="user-info">
-                ${actionBtn}
-                <span class="user-name" onclick="showMyPosts()" style="cursor:pointer">👤 ${user.displayName}님</span> 
-                <button id="logout-btn" class="logout-style">로그아웃</button>
-            </div>
-        `;
-        document.getElementById('logout-btn').onclick = () => signOut(auth);
-        if (document.getElementById('my-posts-btn')) document.getElementById('my-posts-btn').onclick = showMyPosts;
-        if (document.getElementById('home-btn-nav')) document.getElementById('home-btn-nav').onclick = goHome;
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'user-name';
+        nameSpan.style.cursor = 'pointer';
+        nameSpan.textContent = `👤 ${user.displayName}님`;
+        nameSpan.onclick = showMyPosts;
+
+        const logoutBtn = document.createElement('button');
+        logoutBtn.className = 'logout-style';
+        logoutBtn.textContent = '로그아웃';
+        logoutBtn.onclick = () => signOut(auth);
+
+        userInfo.appendChild(actionBtn);
+        userInfo.appendChild(nameSpan);
+        userInfo.appendChild(logoutBtn);
+        authSection.appendChild(userInfo);
         
     } else {
-        authSection.innerHTML = `
-            <div style="display:flex; align-items:center; gap:10px;">
-                <button id="login-btn">구글 로그인</button>
-            </div>
-        `;
-        document.getElementById('login-btn').onclick = () => signInWithPopup(auth, provider);
+        const loginDiv = document.createElement('div');
+        loginDiv.style.display = 'flex';
+        loginDiv.style.alignItems = 'center';
+        loginDiv.style.gap = '10px';
+
+        const loginBtn = document.createElement('button');
+        loginBtn.textContent = '구글 로그인';
+        loginBtn.onclick = () => signInWithPopup(auth, provider);
+
+        loginDiv.appendChild(loginBtn);
+        authSection.appendChild(loginDiv);
     }
 }
 
@@ -130,7 +157,7 @@ function goHome() {
     currentSort = 'latest';
     targetUserUid = null;
     editingPostId = null;
-    searchQuery = ""; // 홈으로 갈 때 검색어 초기화
+    searchQuery = ""; 
     if(document.getElementById('mobile-search-input')) document.getElementById('mobile-search-input').value = "";
     hideWriteTemplate(); 
     document.getElementById('user-profile-header').style.display = 'none';
@@ -154,15 +181,33 @@ async function showMyPosts() {
 
     const header = document.getElementById('user-profile-header');
     header.style.display = 'block';
-    header.innerHTML = `
-        <div class="profile-header-card">
-            <h2>${userData.name} 님의 페이지</h2>
-            <div class="profile-info">팔로워: <b>${userData.followers?.length || 0}</b>명</div>
-            <div style="display:flex; justify-content:center; gap:10px;">
-                <button class="home-btn" onclick="goHome()">홈으로</button>
-            </div>
-        </div>
-    `;
+    header.innerHTML = ""; // 안전하게 다시 생성
+
+    const card = document.createElement('div');
+    card.className = 'profile-header-card';
+    
+    const title = document.createElement('h2');
+    title.textContent = `${userData.name} 님의 페이지`;
+    
+    const info = document.createElement('div');
+    info.className = 'profile-info';
+    info.innerHTML = `팔로워: <b>${userData.followers?.length || 0}</b>명`;
+
+    const btnDiv = document.createElement('div');
+    btnDiv.style.display = 'flex';
+    btnDiv.style.justifyContent = 'center';
+    btnDiv.style.gap = '10px';
+    
+    const hBtn = document.createElement('button');
+    hBtn.className = 'home-btn';
+    hBtn.textContent = '홈으로';
+    hBtn.onclick = goHome;
+
+    btnDiv.appendChild(hBtn);
+    card.appendChild(title);
+    card.appendChild(info);
+    card.appendChild(btnDiv);
+    header.appendChild(card);
 
     renderAuthUI(auth.currentUser, 'my');
     updateFeed();
@@ -186,20 +231,41 @@ window.showUserPosts = async (uid) => {
 
     const header = document.getElementById('user-profile-header');
     header.style.display = 'block';
-    header.innerHTML = `
-        <div class="profile-header-card">
-            <h2>${userData.name} 님의 페이지</h2>
-            <div class="profile-info">팔로워: <b>${userData.followers?.length || 0}</b>명</div>
-            <div style="display:flex; justify-content:center; gap:10px;">
-                ${auth.currentUser?.uid !== uid ? `
-                    <button class="follow-btn ${isFollowing ? 'following' : ''}" onclick="toggleFollow('${uid}', '${userData.name}', ${isFollowing})">
-                        ${isFollowing ? '팔로잉' : '팔로우'}
-                    </button>
-                ` : ''}
-                <button class="home-btn" onclick="goHome()">홈으로</button>
-            </div>
-        </div>
-    `;
+    header.innerHTML = "";
+
+    const card = document.createElement('div');
+    card.className = 'profile-header-card';
+    
+    const title = document.createElement('h2');
+    title.textContent = `${userData.name} 님의 페이지`;
+    
+    const info = document.createElement('div');
+    info.className = 'profile-info';
+    info.innerHTML = `팔로워: <b>${userData.followers?.length || 0}</b>명`;
+
+    const btnDiv = document.createElement('div');
+    btnDiv.style.display = 'flex';
+    btnDiv.style.justifyContent = 'center';
+    btnDiv.style.gap = '10px';
+
+    if (auth.currentUser?.uid !== uid) {
+        const fBtn = document.createElement('button');
+        fBtn.className = `follow-btn ${isFollowing ? 'following' : ''}`;
+        fBtn.textContent = isFollowing ? '팔로잉' : '팔로우';
+        fBtn.onclick = () => toggleFollow(uid, userData.name, isFollowing);
+        btnDiv.appendChild(fBtn);
+    }
+    
+    const hBtn = document.createElement('button');
+    hBtn.className = 'home-btn';
+    hBtn.textContent = '홈으로';
+    hBtn.onclick = goHome;
+
+    btnDiv.appendChild(hBtn);
+    card.appendChild(title);
+    card.appendChild(info);
+    card.appendChild(btnDiv);
+    header.appendChild(card);
     
     renderAuthUI(auth.currentUser, 'user');
     updateFeed();
@@ -312,55 +378,83 @@ function createPostElement(post) {
     div.id = `post-${post.id}`;
     const isCommentOpen = openCommentsStore.has(post.id) ? 'display: block;' : 'display: none;';
 
+    // HTML 구조를 만들되, 사용자 입력값(author, description, content)은 escape 처리된 값만 사용
     div.innerHTML = `
         <div class="post-content-view">
             <div class="post-header">
                 <div>
-                    <span class="post-author" onclick="showUserPosts('${post.uid}')" style="cursor:pointer">👤 ${post.author}</span>
-                    <span class="lang-badge">${post.language}</span>
+                    <span class="post-author" style="cursor:pointer">👤 ${escapeHtml(post.author)}</span>
+                    <span class="lang-badge">${escapeHtml(post.language)}</span>
                 </div>
                 <div class="header-right">
                     <span class="post-date">${date}</span>
                     ${isOwner ? `
-                        <button class="edit-btn" onclick="startEdit('${post.id}')">수정</button>
-                        <button class="delete-btn" onclick="deletePost('${post.id}')">삭제</button>
+                        <button class="edit-btn" id="edit-post-${post.id}">수정</button>
+                        <button class="delete-btn" id="delete-post-${post.id}">삭제</button>
                     ` : ''}
                 </div>
             </div>
-            ${post.description ? `<div class="post-desc">${post.description}</div>` : ''}
+            ${post.description ? `<div class="post-desc">${escapeHtml(post.description)}</div>` : ''}
             <pre><button class="copy-btn">복사</button><code class="language-${post.language}">${escapeHtml(post.content)}</code></pre>
             <div class="post-footer">
-                <button class="like-btn ${isLiked ? 'liked' : ''}" onclick="toggleLike('${post.id}', ${isLiked})">❤️ 좋아요 ${post.likes?.length || 0}</button>
-                <button class="comment-toggle" onclick="toggleComments('${post.id}')">💬 댓글 ${post.comments?.length || 0}</button>
+                <button class="like-btn ${isLiked ? 'liked' : ''}" id="like-post-${post.id}">❤️ 좋아요 ${post.likes?.length || 0}</button>
+                <button class="comment-toggle" id="comment-toggle-${post.id}">💬 댓글 ${post.comments?.length || 0}</button>
             </div>
         </div>
         <div class="comment-section" id="comments-${post.id}" style="${isCommentOpen}">
-            <div class="comment-list">
-                ${post.comments?.map((c, index) => `
-                    <div class="comment-item" id="comment-${post.id}-${index}">
-                        <div class="comment-main">
-                            <div class="comment-body" style="flex:1;">
-                                <span class="comment-user" onclick="showUserPosts('${c.uid}')" style="cursor:pointer">${c.user}:</span>
-                                <span class="comment-text">${escapeHtml(c.text)}</span>
-                            </div>
-                            <div class="comment-actions">
-                                <button onclick="toggleCommentLike('${post.id}', ${index})" style="background:none; color:${c.likes?.includes(auth.currentUser?.uid) ? '#ff5252' : '#888'}">♥ ${c.likes?.length || 0}</button>
-                                ${auth.currentUser?.uid === c.uid ? `
-                                    <button onclick="editComment('${post.id}', ${index}, '${escapeHtml(c.text)}')" title="수정">✎</button>
-                                    <button onclick="deleteComment('${post.id}', ${index})" title="삭제">✘</button>
-                                ` : ''}
-                            </div>
-                        </div>
-                    </div>
-                `).join('')}
-            </div>
+            <div class="comment-list" id="comment-list-${post.id}">
+                </div>
             <div class="comment-input-area">
                 <input type="text" id="input-${post.id}" placeholder="댓글을 입력하세요...">
-                <button onclick="addComment('${post.id}')">등록</button>
+                <button id="add-comment-${post.id}">등록</button>
             </div>
         </div>
     `;
-    
+
+    // 이벤트 리스너 안전하게 수동 연결
+    div.querySelector('.post-author').onclick = () => showUserPosts(post.uid);
+    if(isOwner) {
+        div.querySelector(`#edit-post-${post.id}`).onclick = () => startEdit(post.id);
+        div.querySelector(`#delete-post-${post.id}`).onclick = () => deletePost(post.id);
+    }
+    div.querySelector(`#like-post-${post.id}`).onclick = () => toggleLike(post.id, isLiked);
+    div.querySelector(`#comment-toggle-${post.id}`).onclick = () => toggleComments(post.id);
+    div.querySelector(`#add-comment-${post.id}`).onclick = () => addComment(post.id);
+
+    // 댓글 리스트 안전하게 렌더링
+    const commentListEl = div.querySelector(`#comment-list-${post.id}`);
+    if (post.comments) {
+        post.comments.forEach((c, index) => {
+            const commentItem = document.createElement('div');
+            commentItem.className = 'comment-item';
+            commentItem.id = `comment-${post.id}-${index}`;
+            
+            commentItem.innerHTML = `
+                <div class="comment-main">
+                    <div class="comment-body" style="flex:1;">
+                        <span class="comment-user" style="cursor:pointer">${escapeHtml(c.user)}:</span>
+                        <span class="comment-text">${escapeHtml(c.text)}</span>
+                    </div>
+                    <div class="comment-actions">
+                        <button class="c-like-btn" style="background:none; color:${c.likes?.includes(auth.currentUser?.uid) ? '#ff5252' : '#888'}">♥ ${c.likes?.length || 0}</button>
+                        ${auth.currentUser?.uid === c.uid ? `
+                            <button class="c-edit-btn" title="수정">✎</button>
+                            <button class="c-delete-btn" title="삭제">✘</button>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+            
+            commentItem.querySelector('.comment-user').onclick = () => showUserPosts(c.uid);
+            commentItem.querySelector('.c-like-btn').onclick = () => toggleCommentLike(post.id, index);
+            if(auth.currentUser?.uid === c.uid) {
+                commentItem.querySelector('.c-edit-btn').onclick = () => editComment(post.id, index, c.text);
+                commentItem.querySelector('.c-delete-btn').onclick = () => deleteComment(post.id, index);
+            }
+            commentListEl.appendChild(commentItem);
+        });
+    }
+
     const copyBtn = div.querySelector('.copy-btn');
     copyBtn.onclick = () => {
         navigator.clipboard.writeText(post.content).then(() => {
@@ -399,13 +493,17 @@ window.startEdit = async (postId) => {
                 <option value="javascript" ${data.language==='javascript'?'selected':''}>JavaScript</option>
             </select>
         </div>
-        <textarea id="edit-code-${postId}" style="width:100%; height:200px; background:#1e1e1e; color:#9cdcfe; border:1px solid #4caf50; padding:10px; border-radius:8px; font-family:monospace; margin-bottom:10px;">${data.content}</textarea>
-        <input type="text" id="edit-desc-${postId}" value="${data.description || ''}" style="width:100%; background:#262626; border:1px solid #444; color:#fff; padding:8px; border-radius:4px; margin-bottom:10px;">
+        <textarea id="edit-code-${postId}" style="width:100%; height:200px; background:#1e1e1e; color:#9cdcfe; border:1px solid #4caf50; padding:10px; border-radius:8px; font-family:monospace; margin-bottom:10px;"></textarea>
+        <input type="text" id="edit-desc-${postId}" style="width:100%; background:#262626; border:1px solid #444; color:#fff; padding:8px; border-radius:4px; margin-bottom:10px;">
         <div style="text-align:right; gap:10px; display:flex; justify-content:flex-end;">
             <button id="save-edit-btn-${postId}" style="background:#4caf50; font-size:12px; color:white; border:none; padding:8px 12px; border-radius:4px; cursor:pointer;">수정 완료</button>
             <button id="cancel-edit-btn-${postId}" style="background:#555; font-size:12px; color:white; border:none; padding:8px 12px; border-radius:4px; cursor:pointer;">취소</button>
         </div>
     `;
+    // 텍스트 영역에 값 안전하게 삽입
+    editForm.querySelector(`#edit-code-${postId}`).value = data.content;
+    editForm.querySelector(`#edit-desc-${postId}`).value = data.description || '';
+    
     postDiv.prepend(editForm);
 
     document.getElementById(`save-edit-btn-${postId}`).onclick = () => saveEdit(postId);
@@ -457,11 +555,12 @@ window.editComment = (postId, index, oldText) => {
 
     bodyArea.innerHTML = `
         <div class="inline-edit-box" style="display:flex; gap:5px; margin-top:5px; width:100%;">
-            <input type="text" id="edit-input-${postId}-${index}" value="${oldText}" style="flex:1; background:#333; border:1px solid #4caf50; color:#fff; padding:5px; border-radius:4px; font-size:12px;">
+            <input type="text" id="edit-input-${postId}-${index}" style="flex:1; background:#333; border:1px solid #4caf50; color:#fff; padding:5px; border-radius:4px; font-size:12px;">
             <button id="submit-edit-${postId}-${index}" style="padding:2px 8px; font-size:11px; background:#4caf50; color:white; border-radius:4px; border:none; cursor:pointer;">완료</button>
             <button id="cancel-edit-${postId}-${index}" style="padding:2px 8px; font-size:11px; background:#555; color:white; border-radius:4px; border:none; cursor:pointer;">취소</button>
         </div>
     `;
+    bodyArea.querySelector('input').value = oldText;
 
     document.getElementById(`submit-edit-${postId}-${index}`).onclick = () => {
         updateComment(postId, index, oldText);
@@ -523,6 +622,7 @@ window.deletePost = async (postId) => {
 };
 
 function escapeHtml(text) {
+    if (!text) return "";
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
