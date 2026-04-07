@@ -25,7 +25,6 @@ let openCommentsStore = new Set();
 let myFollowingList = []; 
 let showAllPopular = false;
 
-// [복구] 유저 데이터 및 인기 유저 목록 렌더링
 async function syncUserData(user) {
     if (!user) return;
     const userRef = doc(db, "users", user.uid);
@@ -37,10 +36,9 @@ async function syncUserData(user) {
         myFollowingList = doc.data()?.following || [];
         renderFollowSidebar();
     });
-    renderPopularUsers(); // 인기 유저 목록 호출
+    renderPopularUsers();
 }
 
-// [신규] 인기 많은 사람 목록 출력
 async function renderPopularUsers() {
     const userListEl = document.getElementById('popular-users-list');
     const moreBtn = document.getElementById('more-users-btn');
@@ -54,7 +52,6 @@ async function renderPopularUsers() {
         users.push({ uid: doc.id, ...doc.data() });
     });
 
-    // 팔로워 수 기준 내림차순 정렬
     users.sort((a, b) => (b.followers?.length || 0) - (a.followers?.length || 0));
 
     const displayUsers = showAllPopular ? users : users.slice(0, 10);
@@ -80,7 +77,6 @@ function renderFollowSidebar() {
     `).join('');
 }
 
-// [수정] 버튼 중복 클릭 방지 (상태값 명확히 분리)
 function updateSortButtons() {
     const btnLatest = document.getElementById('sort-latest');
     const btnPopular = document.getElementById('sort-popular');
@@ -123,10 +119,9 @@ function renderAuthUI(user, viewMode = 'all') {
     }
 }
 
-// [수정] 홈으로 가기 (모든 상태 초기화 및 UI 복구)
 function goHome() {
     currentView = 'all';
-    currentSort = 'latest'; // 홈으로 올 때 정렬도 초기화
+    currentSort = 'latest';
     targetUserUid = null;
     editingPostId = null;
     resetWriteArea();
@@ -267,7 +262,6 @@ function updateFeed() {
     });
 }
 
-// [복구] 댓글 수정/삭제/좋아요 로직 포함
 function createPostElement(post) {
     const isOwner = auth.currentUser?.uid === post.uid;
     const isLiked = post.likes?.includes(auth.currentUser?.uid);
@@ -299,17 +293,17 @@ function createPostElement(post) {
         <div class="comment-section" id="comments-${post.id}" style="${isCommentOpen}">
             <div class="comment-list">
                 ${post.comments?.map((c, index) => `
-                    <div class="comment-item">
+                    <div class="comment-item" id="comment-${post.id}-${index}">
                         <div class="comment-main">
-                            <div>
+                            <div class="comment-body" style="flex:1;">
                                 <span class="comment-user" onclick="showUserPosts('${c.uid}')" style="cursor:pointer">${c.user}:</span>
                                 <span class="comment-text">${escapeHtml(c.text)}</span>
                             </div>
                             <div class="comment-actions">
                                 <button onclick="toggleCommentLike('${post.id}', ${index})" style="background:none; color:${c.likes?.includes(auth.currentUser?.uid) ? '#ff5252' : '#888'}">♥ ${c.likes?.length || 0}</button>
                                 ${auth.currentUser?.uid === c.uid ? `
-                                    <button onclick="editComment('${post.id}', ${index}, '${c.text}')">수정</button>
-                                    <button onclick="deleteComment('${post.id}', ${index})">삭제</button>
+                                    <button onclick="editComment('${post.id}', ${index}, '${escapeHtml(c.text)}')" title="수정">✎</button>
+                                    <button onclick="deleteComment('${post.id}', ${index})" title="삭제">✘</button>
                                 ` : ''}
                             </div>
                         </div>
@@ -326,7 +320,6 @@ function createPostElement(post) {
     return div;
 }
 
-// [복구] 댓글 관련 상세 기능
 window.addComment = async (postId) => {
     const input = document.getElementById(`input-${postId}`);
     if (!auth.currentUser || !input.value.trim()) return;
@@ -345,14 +338,39 @@ window.deleteComment = async (postId, index) => {
     await updateDoc(postRef, { comments });
 };
 
-window.editComment = async (postId, index, oldText) => {
-    const newText = prompt("댓글 수정:", oldText);
-    if (!newText || newText === oldText) return;
+// [수정] 알림창 없이 댓글란에서 즉시 수정 모드 전환
+window.editComment = (postId, index, oldText) => {
+    const commentDiv = document.getElementById(`comment-${postId}-${index}`);
+    const bodyArea = commentDiv.querySelector('.comment-body');
+    const actionArea = commentDiv.querySelector('.comment-actions');
+
+    // 이미 수정 중이면 중복 처리 안함
+    if (commentDiv.classList.contains('is-editing')) return;
+    commentDiv.classList.add('is-editing');
+    
+    actionArea.style.display = 'none'; // 기존 아이콘 숨김
+    bodyArea.innerHTML = `
+        <div class="inline-edit-box" style="display:flex; gap:5px; margin-top:5px; width:100%;">
+            <input type="text" id="edit-input-${postId}-${index}" value="${oldText}" style="flex:1; background:#333; border:1px solid #4caf50; color:#fff; padding:5px; border-radius:4px; font-size:12px;">
+            <button onclick="updateComment('${postId}', ${index})" style="padding:2px 8px; font-size:11px; background:#4caf50; color:white; border-radius:4px;">완료</button>
+            <button onclick="updateFeed()" style="padding:2px 8px; font-size:11px; background:#555; color:white; border-radius:4px;">취소</button>
+        </div>
+    `;
+};
+
+// [신규] 수정한 내용 저장
+window.updateComment = async (postId, index) => {
+    const input = document.getElementById(`edit-input-${postId}-${index}`);
+    const newText = input.value.trim();
+    if (!newText) return;
+
     const postRef = doc(db, "posts", postId);
     const postSnap = await getDoc(postRef);
     const comments = postSnap.data().comments;
     comments[index].text = newText;
+    
     await updateDoc(postRef, { comments });
+    // onSnapshot이 감지해서 자동으로 다시 그림
 };
 
 window.toggleCommentLike = async (postId, index) => {
@@ -403,7 +421,6 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// [수정] 정렬 버튼 클릭 시 다른 뷰 해제
 document.getElementById('sort-latest').onclick = () => { currentSort = 'latest'; currentView = 'all'; updateFeed(); };
 document.getElementById('sort-popular').onclick = () => { currentSort = 'popular'; currentView = 'all'; updateFeed(); };
 document.getElementById('sort-follow').onclick = () => { currentView = 'follow'; currentSort = 'latest'; updateFeed(); };

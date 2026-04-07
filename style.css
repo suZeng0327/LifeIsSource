@@ -1,4 +1,4 @@
-/* style.css */
+/* style.css (기존 코드 유지 및 하단 수정) */
 * { box-sizing: border-box; }
 body {
     margin: 0;
@@ -15,7 +15,6 @@ nav {
 
 .logo { font-size: 1.6rem; font-weight: bold; color: #4caf50; letter-spacing: -1px; }
 
-/* 레이아웃 구조 */
 .container {
     display: flex;
     max-width: 1200px;
@@ -26,7 +25,6 @@ nav {
 
 main { flex: 3; }
 
-/* 사이드바 및 팔로우/인기 목록 */
 .sidebar {
     flex: 1;
     background: #1a1a1a;
@@ -56,7 +54,6 @@ main { flex: 3; }
     padding-left: 12px;
 }
 
-/* 유저 프로필 헤더 */
 .profile-header-card {
     background: #1a1a1a;
     padding: 30px;
@@ -105,11 +102,9 @@ main { flex: 3; }
 
 .actions { text-align: right; margin-top: 25px; }
 
-/* 정렬 옵션 버튼 스타일 */
 .sort-options { margin-bottom: 15px; display: flex; gap: 10px; }
 .sort-options button { background: #262626; color: #888; border: 1px solid #333; padding: 8px 18px; transition: 0.3s; }
 
-/* 활성화 상태 (중복되지 않게 script.js에서 제어되는 클래스) */
 .sort-options button.active { 
     background-color: #4caf50 !important; 
     color: white !important; 
@@ -126,7 +121,6 @@ button:hover { filter: brightness(1.1); }
 .my-posts-btn { background-color: #2196f3 !important; }
 .home-btn { background-color: #607d8b !important; }
 
-/* 게시물 스타일 */
 .post {
     background-color: #1a1a1a; padding: 20px; border-radius: 12px;
     margin-bottom: 25px; border: 1px solid #333;
@@ -154,7 +148,6 @@ pre { margin: 0; border-radius: 8px; font-size: 14px; position: relative; }
 .like-btn, .comment-toggle { background: none; color: #888; padding: 0; display: flex; align-items: center; gap: 5px; }
 .like-btn.liked { color: #ff5252; }
 
-/* 댓글 섹션 보강 */
 .comment-section { margin-top: 15px; background: #262626; padding: 15px; border-radius: 8px; display: none; }
 .comment-input-area { display: flex; gap: 10px; margin-bottom: 15px; }
 .comment-input-area input { flex: 1; background: #333; border: 1px solid #444; color: #fff; padding: 8px; border-radius: 4px; }
@@ -166,14 +159,14 @@ pre { margin: 0; border-radius: 8px; font-size: 14px; position: relative; }
 .comment-user { color: #4caf50; font-weight: bold; margin-right: 5px; }
 .comment-text { color: #ddd; flex: 1; word-break: break-all; }
 
-/* 댓글 액션 버튼 (수정/삭제/좋아요) */
-.comment-actions { display: flex; gap: 10px; align-items: center; }
+/* [수정] 댓글 액션 버튼 - 아이콘 스타일 적용 */
+.comment-actions { display: flex; gap: 12px; align-items: center; margin-left: 10px; }
 .comment-actions button { 
-    background: none; padding: 0; font-size: 11px; color: #777; font-weight: normal; 
+    background: none; padding: 0; font-size: 14px; color: #777; font-weight: normal; 
+    transition: 0.2s; min-width: 15px;
 }
-.comment-actions button:hover { color: #4caf50; text-decoration: underline; }
+.comment-actions button:hover { color: #4caf50; transform: scale(1.2); }
 
-/* 더보기 버튼 스타일 */
 #more-users-btn {
     background-color: #333;
     color: #bbb;
