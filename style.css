@@ -198,3 +198,74 @@ pre { margin: 0; border-radius: 8px; font-size: 14px; position: relative; }
     background-color: #444;
     color: #fff;
 }
+
+/* ============================================================
+   [모바일 전용 최적화 코드] - PC 디자인에는 영향을 주지 않습니다.
+   ============================================================ */
+@media screen and (max-width: 768px) {
+    /* 1. 상단 네비게이션 최적화 */
+    nav {
+        padding: 10px 3%;
+        flex-direction: column; /* 로고와 버튼들을 위아래로 */
+        gap: 10px;
+    }
+    
+    nav div:last-child { 
+        display: flex; 
+        gap: 5px; 
+        width: 100%; 
+        justify-content: center; 
+    }
+    
+    nav button { 
+        padding: 8px 12px; 
+        font-size: 0.8rem; 
+        flex: 1; /* 버튼들이 가로로 꽉 차게 */
+    }
+
+    /* 2. 전체 레이아웃 세로 정렬 */
+    .container {
+        flex-direction: column;
+        margin: 10px auto;
+        padding: 0 10px;
+    }
+
+    .sidebar {
+        position: static; /* 모바일에서는 고정 해제 */
+        order: 2; /* 콘텐츠 다음에 사이드바 배치 */
+        width: 100%;
+    }
+
+    main {
+        order: 1;
+        width: 100%;
+    }
+
+    /* 3. 카드 및 여백 다이어트 */
+    .post, .write-card, .profile-header-card {
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+
+    /* 4. 코드 영역 최적화 (가독성 향상) */
+    pre {
+        font-size: 13px;
+    }
+
+    #code-input {
+        font-size: 13px;
+        padding: 10px;
+    }
+
+    /* 5. 정렬 옵션 버튼 크기 조절 */
+    .sort-options {
+        justify-content: space-between;
+    }
+
+    .sort-options button {
+        flex: 1;
+        padding: 8px 5px;
+        font-size: 0.8rem;
+        text-align: center;
+    }
+}
