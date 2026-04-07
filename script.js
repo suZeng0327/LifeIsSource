@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, updateDoc, doc, arrayUnion, arrayRemove, where, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, updateDoc, doc, arrayUnion, arrayRemove, where, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBv05NaIqSaenLVsnGihFee8eRNHJ1ldYs",
@@ -18,7 +18,7 @@ const provider = new GoogleAuthProvider();
 
 let currentView = 'all'; 
 let currentSort = 'latest'; 
-let editingPostId = null; // 수정 중인 게시물 ID 저장
+let editingPostId = null;
 
 // --- 네비게이션 및 UI 렌더링 ---
 function renderAuthUI(user, viewMode = 'all') {
@@ -54,7 +54,7 @@ function goHome() {
 }
 
 function showMyPosts() {
-    if (!auth.currentUser) return alert("로그인이 필요합니다!");
+    if (!auth.currentUser) return;
     currentView = 'my';
     document.getElementById('write-area').style.display = 'none';
     document.getElementById('sort-area').style.display = 'none';
@@ -75,8 +75,7 @@ document.getElementById('post-btn').onclick = async () => {
     const desc = document.getElementById('desc-input').value;
     const lang = document.getElementById('language-select').value;
     
-    if (!auth.currentUser) return alert("로그인 후 이용해 주세요!");
-    if (!code.trim()) return alert("코드를 입력하세요!");
+    if (!auth.currentUser || !code.trim()) return;
 
     try {
         if (editingPostId) {
@@ -87,8 +86,7 @@ document.getElementById('post-btn').onclick = async () => {
                 language: lang,
                 updatedAt: serverTimestamp()
             });
-            alert("게시물이 수정되었습니다!");
-            editingPostId = null;
+            editingPostId = null; // ID 초기화
         } else {
             // 새 글 쓰기
             await addDoc(collection(db, "posts"), {
@@ -101,9 +99,8 @@ document.getElementById('post-btn').onclick = async () => {
                 likes: [],
                 comments: []
             });
-            alert("성공적으로 공유되었습니다!");
         }
-        resetWriteArea();
+        resetWriteArea(); // UI 원래대로 복구 (글자 및 타이틀 변경)
     } catch (e) { console.error(e); }
 };
 
@@ -113,9 +110,10 @@ function resetWriteArea() {
     document.getElementById('language-select').value = "plaintext";
     document.getElementById('post-btn').innerText = "공유하기";
     document.querySelector('.write-card h3').innerText = "새 코드 공유하기";
+    editingPostId = null;
 }
 
-// --- 피드 업데이트 및 게시물 엘리먼트 생성 ---
+// --- 피드 업데이트 ---
 function updateFeed() {
     if (window.unsubscribeFeed) window.unsubscribeFeed();
     const feed = document.getElementById('feed');
@@ -179,9 +177,8 @@ function createPostElement(post) {
         </div>
     `;
 
-    // 개선된 복사 기능 (이벤트 리스너 방식)
     div.querySelector('.copy-btn').onclick = () => {
-        navigator.clipboard.writeText(post.content).then(() => alert("코드가 복사되었습니다!"));
+        navigator.clipboard.writeText(post.content);
     };
 
     return div;
@@ -189,10 +186,11 @@ function createPostElement(post) {
 
 // --- 수정/삭제/기타 기능 ---
 window.startEdit = async (postId) => {
-    const postSnap = await doc(db, "posts", postId);
-    // 실제 데이터를 다시 가져와서 입력칸에 세팅
-    onSnapshot(postSnap, (doc) => {
-        const data = doc.data();
+    const postRef = doc(db, "posts", postId);
+    const postSnap = await getDoc(postRef);
+    
+    if (postSnap.exists()) {
+        const data = postSnap.data();
         document.getElementById('code-input').value = data.content;
         document.getElementById('desc-input').value = data.description;
         document.getElementById('language-select').value = data.language;
@@ -200,19 +198,18 @@ window.startEdit = async (postId) => {
         document.getElementById('post-btn').innerText = "수정 완료";
         document.querySelector('.write-card h3').innerText = "게시물 수정하기";
         window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
+    }
 };
 
 window.deletePost = async (postId) => {
-    if (!confirm("정말 이 게시물을 삭제하시겠습니까? 관련 댓글과 좋아요도 모두 삭제됩니다.")) return;
+    if (!confirm("정말 삭제하시겠습니까?")) return;
     try {
         await deleteDoc(doc(db, "posts", postId));
-        alert("삭제되었습니다.");
-    } catch (e) { alert("삭제 권한이 없습니다."); }
+    } catch (e) { console.error(e); }
 };
 
 window.toggleLike = async (postId, isLiked) => {
-    if (!auth.currentUser) return alert("로그인하세요!");
+    if (!auth.currentUser) return;
     await updateDoc(doc(db, "posts", postId), {
         likes: isLiked ? arrayRemove(auth.currentUser.uid) : arrayUnion(auth.currentUser.uid)
     });
@@ -225,8 +222,7 @@ window.toggleComments = (postId) => {
 
 window.addComment = async (postId) => {
     const input = document.getElementById(`input-${postId}`);
-    if (!auth.currentUser) return alert("로그인하세요!");
-    if (!input.value.trim()) return;
+    if (!auth.currentUser || !input.value.trim()) return;
     await updateDoc(doc(db, "posts", postId), {
         comments: arrayUnion({ user: auth.currentUser.displayName, text: input.value, uid: auth.currentUser.uid })
     });
