@@ -69,8 +69,8 @@ function hideWriteTemplate() {
     resetWriteArea();
 }
 
-openWriteBtn.onclick = showWriteTemplate;
-cancelWriteBtn.onclick = hideWriteTemplate;
+if(openWriteBtn) openWriteBtn.onclick = showWriteTemplate;
+if(cancelWriteBtn) cancelWriteBtn.onclick = hideWriteTemplate;
 
 async function syncUserData(user) {
     if (!user) {
@@ -79,15 +79,21 @@ async function syncUserData(user) {
         return;
     }
     const userRef = doc(db, "users", user.uid);
-    const userSnap = await getDoc(userRef);
-    if (!userSnap.exists()) {
-        await setDoc(userRef, { name: user.displayName, following: [], followers: [], photoURL: user.photoURL });
-    }
+    
+    // [수정 핵심]: 기존 정보를 덮어쓰지 않도록 setDoc에 merge: true 사용
+    await setDoc(userRef, { 
+        name: user.displayName, 
+        photoURL: user.photoURL,
+        email: user.email 
+    }, { merge: true });
+
     onSnapshot(userRef, (doc) => {
-        myFollowingList = doc.data()?.following || [];
-        renderFollowSidebar();
-        // 팔로우 탭이나 프로필 페이지 상태를 실시간 반영
-        if(currentView === 'follow' || currentView === 'user') updateFeed();
+        if (doc.exists()) {
+            myFollowingList = doc.data()?.following || [];
+            renderFollowSidebar();
+            // 팔로우 탭이나 프로필 페이지 상태를 실시간 반영
+            if(currentView === 'follow' || currentView === 'user') updateFeed();
+        }
     });
 }
 
@@ -113,9 +119,7 @@ function renderFollowSidebar() {
     });
 }
 
-// 공지사항 로드 함수 (사이드바 공지사항 목록 업데이트)
 function loadNotices() {
-    // isNotice가 true인 글만 최신순으로 가져옴
     const q = query(collection(db, "posts"), where("isNotice", "==", true), orderBy("createdAt", "desc"));
     onSnapshot(q, (snapshot) => {
         const noticeList = document.getElementById('notice-list');
@@ -131,10 +135,8 @@ function loadNotices() {
             const post = docSnap.data();
             const item = document.createElement('div');
             item.className = 'notice-item';
-            // 디자인: 한 줄 표시 및 말줄임 처리
             item.style = "padding: 8px 0; border-bottom: 1px solid #333; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.85rem;";
             
-            // "코드에 대한 간단한 설명" 필드가 공지사항의 제목이 됨
             const title = post.description || "제목 없는 공지";
             item.textContent = `📌 ${title}`;
             
@@ -145,7 +147,6 @@ function loadNotices() {
                     targetPost.style.boxShadow = "0 0 15px #4caf50";
                     setTimeout(() => targetPost.style.boxShadow = "none", 2000);
                 } else {
-                    // 현재 피드에 없으면 홈으로 이동 후 스크롤 시도
                     alert("홈 화면에서 해당 공지사항을 확인하실 수 있습니다.");
                     goHome();
                 }
@@ -306,7 +307,7 @@ window.showUserPosts = async (uid) => {
     if(sortArea) sortArea.style.display = 'none';
     
     const userSnap = await getDoc(doc(db, "users", uid));
-    const userData = userSnap.data();
+    const userData = userSnap.exists() ? userSnap.data() : { name: "알 수 없는 사용자", followers: [] };
     const isFollowing = myFollowingList.some(u => u.uid === uid);
 
     const header = document.getElementById('user-profile-header');
@@ -351,6 +352,7 @@ window.showUserPosts = async (uid) => {
     updateFeed();
 };
 
+// [수정 핵심]: toggleFollow 함수 보강
 window.toggleFollow = async (uid, name, isFollowing) => {
     if (!auth.currentUser) {
         alert("로그인이 필요합니다.");
@@ -365,11 +367,22 @@ window.toggleFollow = async (uid, name, isFollowing) => {
             await updateDoc(myRef, { following: updatedList });
             await updateDoc(targetRef, { followers: arrayRemove(auth.currentUser.uid) });
         } else {
-            await updateDoc(myRef, { following: arrayUnion({ uid: uid, name: name }) });
-            await updateDoc(targetRef, { followers: arrayUnion(auth.currentUser.uid) });
+            // [수정]: setDoc과 merge를 사용하여 문서 유실 방지
+            await setDoc(myRef, { 
+                following: arrayUnion({ uid: uid, name: name }) 
+            }, { merge: true });
+            
+            await setDoc(targetRef, { 
+                followers: arrayUnion(auth.currentUser.uid) 
+            }, { merge: true });
         }
+        
+        // UI 즉시 업데이트를 위해 프로필 다시 렌더링
+        if (currentView === 'user') showUserPosts(uid);
+        
     } catch (e) {
         console.error("Follow Toggle Error:", e);
+        alert("팔로우 처리 중 오류가 발생했습니다.");
     }
 };
 
@@ -739,6 +752,11 @@ function escapeHtml(text) {
     return div.innerHTML;   
 }
 
-document.getElementById('sort-latest').onclick = () => { currentSort = 'latest'; currentView = 'all'; updateFeed(); };
-document.getElementById('sort-popular').onclick = () => { currentSort = 'popular'; currentView = 'all'; updateFeed(); };
-document.getElementById('sort-follow').onclick = () => { currentView = 'follow'; currentSort = 'latest'; updateFeed(); };
+const btnLatest = document.getElementById('sort-latest');
+if(btnLatest) btnLatest.onclick = () => { currentSort = 'latest'; currentView = 'all'; updateFeed(); };
+
+const btnPopular = document.getElementById('sort-popular');
+if(btnPopular) btnPopular.onclick = () => { currentSort = 'popular'; currentView = 'all'; updateFeed(); };
+
+const btnFollowSort = document.getElementById('sort-follow');
+if(btnFollowSort) btnFollowSort.onclick = () => { currentView = 'follow'; currentSort = 'latest'; updateFeed(); };

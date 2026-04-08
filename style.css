@@ -370,3 +370,53 @@ code {
     color: #888;
     font-size: 0.95rem;
 }
+
+/* 팔로우 버튼 공통 스타일 (기존 디자인 유지) */
+.follow-btn {
+    padding: 5px 12px;
+    border-radius: 6px;
+    border: 1px solid #4caf50;
+    background: transparent;
+    color: #4caf50;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: all 0.2s;
+}
+
+/* 팔로잉 중일 때 상태 (시각적 구분) */
+.follow-btn.following {
+    background: #4caf50;
+    color: #fff;
+}
+
+/* 사이드바 팔로우 목록 레이아웃 정렬 */
+#follow-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.follow-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 5px 0;
+}
+
+.follow-item img {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #333; /* 이미지 로딩 전 대비 */
+}
+
+/* 프로필 헤더 내 팔로우 버튼 위치 (필요 시) */
+#user-profile-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px;
+    background: #1a1a1a;
+    border-radius: 12px;
+    margin-bottom: 20px;
+}
