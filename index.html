@@ -56,11 +56,13 @@
                     </select>
                 </div>
                 <textarea id="code-input" placeholder="여기에 소스코드를 입력하세요..."></textarea>
-                <input type="text" id="desc-input" placeholder="코드에 대한 간단한 설명을 적어주세요.">
+                <input type="text" id="desc-input" placeholder="코드에 대한 간단한 설명을 적어주세요. (공지사항 제목)">
+                
                 <div class="actions" style="display: flex; align-items: center; justify-content: flex-end;">
-                    <label id="notice-label" style="display: none; color: #ffffff; margin-right: auto; cursor: pointer; font-size: 0.9rem; align-items: center;">
-                        <input type="checkbox" id="is-notice-checkbox" style="vertical-align: middle; margin-right: 5px;"> 공지사항
+                    <label id="notice-label" style="display: none; color: #4caf50; margin-right: auto; cursor: pointer; font-size: 0.9rem; align-items: center;">
+                        <input type="checkbox" id="is-notice-checkbox" style="vertical-align: middle; margin-right: 5px;"> 공지사항으로 등록
                     </label>
+                    
                     <button id="cancel-write-btn" style="background: #555; margin-right: 10px;">취소</button>
                     <button id="post-btn">공유하기</button>
                 </div>
@@ -94,9 +96,12 @@
                 <h4>팔로우 목록</h4>
                 <div id="follow-list">로그인이 필요합니다.</div>
             </div>
+            
             <div class="sidebar-section" style="margin-top: 20px;">
                 <h4>📢 공지사항</h4>
-                <div id="notice-list" style="font-size: 0.9rem; color: #ccc;">공지사항이 없습니다.</div>
+                <div id="notice-list" style="font-size: 0.9rem; color: #ccc;">
+                    공지사항이 없습니다.
+                </div>
             </div>
         </aside>
     </div>
