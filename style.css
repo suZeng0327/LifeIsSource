@@ -42,6 +42,9 @@ main { flex: 3; min-width: 0; }
 .sidebar h4 { margin-top: 0; color: #4caf50; border-bottom: 1px solid #333; padding-bottom: 10px; }
 
 .follow-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
     padding: 10px;
     margin-bottom: 5px;
     border-radius: 6px;
@@ -55,6 +58,12 @@ main { flex: 3; min-width: 0; }
     border-left: 3px solid #4caf50;
     padding-left: 12px;
 }
+.follow-item img {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #333;
+}
 
 .profile-header-card {
     background: #1a1a1a;
@@ -65,15 +74,34 @@ main { flex: 3; min-width: 0; }
     border: 1px solid #4caf50;
 }
 .profile-info { margin-bottom: 20px; color: #bbb; }
+
+/* --- [팔로우/팔로잉 버튼 디자인 반전 적용] --- */
 .follow-btn {
-    background-color: #4caf50;
-    margin-right: 10px;
+    background-color: #4caf50 !important; /* 팔로우: 색 채움 */
+    color: white !important;
+    border: 1px solid #4caf50 !important;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    font-family: inherit;
+    font-size: 0.85rem;
+    transition: all 0.2s;
 }
+
 .follow-btn.following {
-    background-color: #333;
-    color: #4caf50;
-    border: 1px solid #4caf50;
+    background-color: transparent !important; /* 팔로잉: 색 없음 */
+    color: #4caf50 !important;
+    border: 1px solid #4caf50 !important;
 }
+
+.follow-btn:hover {
+    filter: brightness(1.1);
+}
+.follow-btn.following:hover {
+    background-color: rgba(76, 175, 80, 0.1) !important;
+}
+/* --- [디자인 반전 적용 끝] --- */
 
 .user-info { display: flex; align-items: center; gap: 12px; }
 .user-name { color: #fff; font-size: 0.9rem; font-weight: bold; }
@@ -104,7 +132,7 @@ main { flex: 3; min-width: 0; }
 
 .actions { text-align: right; margin-top: 25px; }
 
-/* --- [수정 구간] 검색창과 정렬 버튼 통합 컨테이너 --- */
+/* 검색창과 정렬 버튼 통합 컨테이너 */
 .search-sort-container {
     display: flex;
     flex-wrap: wrap;
@@ -139,7 +167,7 @@ main { flex: 3; min-width: 0; }
 /* 검색창 영역 */
 .mobile-search-area {
     flex: 1; 
-    min-width: 200px; /* 너무 좁아지지 않게 설정 */
+    min-width: 200px; 
     display: block;
 }
 
@@ -147,7 +175,7 @@ main { flex: 3; min-width: 0; }
     width: 100%;
     height: 38px;
     background: #1e1e1e;
-    border: 1px solid #333; /* 기본 상태 테두리 약화 */
+    border: 1px solid #333; 
     border-radius: 8px;
     color: #fff;
     font-size: 0.9rem;
@@ -161,7 +189,6 @@ main { flex: 3; min-width: 0; }
     border-color: #4caf50 !important;
     box-shadow: 0 0 5px rgba(76, 175, 80, 0.3);
 }
-/* --- [수정 구간 끝] --- */
 
 button {
     background-color: #4caf50; color: white; border: none;
@@ -190,7 +217,6 @@ button:hover { filter: brightness(1.1); }
 .post-desc { margin: 15px 0; color: #bbb; line-height: 1.5; border-left: 3px solid #4caf50; padding-left: 12px; }
 .lang-badge { background: #333; padding: 2px 8px; border-radius: 4px; color: #4caf50; font-size: 0.75rem; }
 
-/* [문법 강조 전용 스타일 최적화] */
 pre { 
     margin: 0; 
     border-radius: 8px; 
@@ -254,15 +280,14 @@ code {
     width: 100%;
 }
 
-/* 추가 요청: 운영자용 공지사항 체크박스 영역 디자인 */
 #notice-label {
-    display: none; /* JS에서 관리자일 때만 flex로 변경됨 */
+    display: none; 
     align-items: center;
     gap: 8px;
     font-size: 0.9rem;
     color: #4caf50;
     cursor: pointer;
-    margin-right: auto; /* 왼쪽 정렬 유지 */
+    margin-right: auto;
 }
 
 #is-notice-checkbox {
@@ -272,11 +297,11 @@ code {
     accent-color: #4caf50;
 }
 
-/* 추가 요청: 사이드바 공지사항 아이템 디자인 보강 */
 .notice-item {
     transition: 0.2s;
     font-size: 0.9rem;
     color: #ccc;
+    padding: 5px 0;
 }
 .notice-item:hover {
     color: #4caf50;
@@ -300,62 +325,50 @@ code {
     .left-ad-area {
         display: none !important;
     }
-
     .mobile-bottom-ad {
         display: block !important;
     }
-    
     .container {
         flex-direction: column;
         margin: 10px auto;
         padding: 0 10px;
     }
-
     nav {
         padding: 10px 3%;
         flex-direction: column;
         gap: 10px;
     }
-
     nav div:last-child { 
         display: flex; gap: 5px; width: 100%; justify-content: center; 
     }
-
     .sidebar {
         position: static;
         order: 2;
         width: 100%;
         margin-top: 20px;
     }
-
     main {
         order: 1;
         width: 100%;
     }
-
     .post, .write-card, .profile-header-card {
         padding: 15px;
         margin-bottom: 15px;
     }
-
-    /* 모바일에서 검색/정렬 영역 세로 배치 또는 간격 조정 */
     .search-sort-container {
         gap: 10px;
     }
-
     .mobile-search-area {
         width: 100%;
         order: 1;
     }
-
     .sort-options {
         width: 100%;
         order: 2;
         justify-content: flex-start;
-        overflow-x: auto; /* 버튼이 많아질 경우 스크롤 허용 */
+        overflow-x: auto;
         padding-bottom: 5px;
     }
-
     .sort-options button {
         flex: 0 0 auto; 
         padding: 8px 12px;
@@ -363,7 +376,6 @@ code {
     }
 }
 
-/* 게시글 로딩/에러 메시지용 */
 .feed-msg {
     text-align: center;
     margin-top: 50px;
@@ -371,46 +383,12 @@ code {
     font-size: 0.95rem;
 }
 
-/* 팔로우 버튼 공통 스타일 (기존 디자인 유지) */
-.follow-btn {
-    padding: 5px 12px;
-    border-radius: 6px;
-    border: 1px solid #4caf50;
-    background: transparent;
-    color: #4caf50;
-    cursor: pointer;
-    font-size: 0.8rem;
-    transition: all 0.2s;
-}
-
-/* 팔로잉 중일 때 상태 (시각적 구분) */
-.follow-btn.following {
-    background: #4caf50;
-    color: #fff;
-}
-
-/* 사이드바 팔로우 목록 레이아웃 정렬 */
 #follow-list {
     display: flex;
     flex-direction: column;
     gap: 8px;
 }
 
-.follow-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 5px 0;
-}
-
-.follow-item img {
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    background: #333; /* 이미지 로딩 전 대비 */
-}
-
-/* 프로필 헤더 내 팔로우 버튼 위치 (필요 시) */
 #user-profile-header {
     display: flex;
     align-items: center;
