@@ -16,6 +16,9 @@ const auth = getAuth();
 const db = getFirestore();
 const provider = new GoogleAuthProvider();
 
+// 운영자 정보
+const ADMIN_UID = "FTH2hM52eCYjsRGZKEO9UZl65D62";
+
 let currentView = 'all'; 
 let currentSort = 'latest'; 
 let targetUserUid = null;
@@ -25,6 +28,7 @@ let myFollowingList = [];
 let searchQuery = ""; // 검색어 상태 유지
 
 updateFeed(); 
+loadNotices(); // 공지사항 로드 함수 추가
 
 const writeArea = document.getElementById('write-area');
 const openWriteBtn = document.getElementById('open-write-btn');
@@ -44,6 +48,14 @@ function showWriteTemplate() {
     }
     writeArea.style.display = 'block';
     toggleArea.style.display = 'none';
+    
+    // 운영자일 경우 공지사항 체크박스 표시
+    const noticeLabel = document.getElementById('notice-label');
+    if (auth.currentUser.uid === ADMIN_UID) {
+        noticeLabel.style.display = 'block';
+    } else {
+        noticeLabel.style.display = 'none';
+    }
 }
 
 function hideWriteTemplate() {
@@ -81,6 +93,39 @@ function renderFollowSidebar() {
         item.textContent = `👤 ${u.name}`;
         item.onclick = () => showUserPosts(u.uid);
         listEl.appendChild(item);
+    });
+}
+
+// 공지사항 로드 함수
+function loadNotices() {
+    const q = query(collection(db, "posts"), where("isNotice", "==", true), orderBy("createdAt", "desc"));
+    onSnapshot(q, (snapshot) => {
+        const noticeList = document.getElementById('notice-list');
+        if (!noticeList) return;
+        noticeList.innerHTML = "";
+        if (snapshot.empty) {
+            noticeList.innerHTML = "<p style='color:#666;'>공지사항이 없습니다.</p>";
+            return;
+        }
+        snapshot.forEach((doc) => {
+            const post = doc.data();
+            const item = document.createElement('div');
+            item.className = 'notice-item';
+            item.style = "padding: 8px 0; border-bottom: 1px solid #333; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;";
+            item.textContent = `📌 ${post.description || "제목 없음"}`;
+            item.onclick = () => {
+                // 공지사항 클릭 시 해당 글 위치로 이동하거나 피드 필터링 등 상세 보기 로직
+                const targetPost = document.getElementById(`post-${doc.id}`);
+                if (targetPost) {
+                    targetPost.scrollIntoView({ behavior: 'smooth' });
+                    targetPost.style.boxShadow = "0 0 15px #4caf50";
+                    setTimeout(() => targetPost.style.boxShadow = "none", 2000);
+                } else {
+                    alert("게시글을 찾는 중입니다. 홈 화면에서 확인해 주세요.");
+                }
+            };
+            noticeList.appendChild(item);
+        });
     });
 }
 
@@ -298,14 +343,21 @@ document.getElementById('post-btn').onclick = async () => {
     const code = document.getElementById('code-input').value;
     const desc = document.getElementById('desc-input').value;
     const lang = document.getElementById('language-select').value;
+    const isNotice = document.getElementById('is-notice-checkbox')?.checked || false;
+
     if (!auth.currentUser || !code.trim()) return;
 
     try {
         await addDoc(collection(db, "posts"), {
             author: auth.currentUser.displayName,
             uid: auth.currentUser.uid,
-            content: code, description: desc, language: lang,
-            createdAt: serverTimestamp(), likes: [], comments: []
+            content: code, 
+            description: desc, 
+            language: lang,
+            isNotice: isNotice, // 공지사항 여부 저장
+            createdAt: serverTimestamp(), 
+            likes: [], 
+            comments: []
         });
         hideWriteTemplate(); 
     } catch (e) { console.error(e); }
@@ -315,6 +367,8 @@ function resetWriteArea() {
     document.getElementById('code-input').value = "";
     document.getElementById('desc-input').value = "";
     document.getElementById('language-select').value = "plaintext";
+    const noticeCheckbox = document.getElementById('is-notice-checkbox');
+    if (noticeCheckbox) noticeCheckbox.checked = false;
     document.getElementById('post-btn').innerText = "공유하기";
     document.querySelector('.write-card h3').innerText = "새 코드 공유하기";
     editingPostId = null;
@@ -376,13 +430,18 @@ function createPostElement(post) {
     const div = document.createElement('div');
     div.className = 'post';
     div.id = `post-${post.id}`;
+    // 공지사항일 경우 스타일 강조
+    if (post.isNotice) {
+        div.style.border = "1px solid #4caf50";
+        div.style.background = "rgba(76, 175, 80, 0.05)";
+    }
     const isCommentOpen = openCommentsStore.has(post.id) ? 'display: block;' : 'display: none;';
 
-    // HTML 구조를 만들되, 사용자 입력값(author, description, content)은 escape 처리된 값만 사용
     div.innerHTML = `
         <div class="post-content-view">
             <div class="post-header">
                 <div>
+                    ${post.isNotice ? '<span style="color:#4caf50; font-weight:bold; margin-right:5px;">[공지]</span>' : ''}
                     <span class="post-author" style="cursor:pointer">👤 ${escapeHtml(post.author)}</span>
                     <span class="lang-badge">${escapeHtml(post.language)}</span>
                 </div>
@@ -625,7 +684,7 @@ function escapeHtml(text) {
     if (!text) return "";
     const div = document.createElement('div');
     div.textContent = text;
-    return div.innerHTML;
+    return div.innerHTML;   
 }
 
 document.getElementById('sort-latest').onclick = () => { currentSort = 'latest'; currentView = 'all'; updateFeed(); };
