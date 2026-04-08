@@ -726,23 +726,62 @@ window.toggleCommentLike = async (postId, index) => {
 };
 
 window.toggleLike = async (postId, isLiked) => {
-    if (!auth.currentUser) return;
-    await updateDoc(doc(db, "posts", postId), {
-        likes: isLiked ? arrayRemove(auth.currentUser.uid) : arrayUnion(auth.currentUser.uid)
-    });
+    if (!auth.currentUser) {
+        alert("로그인이 필요합니다.");
+        return;
+    }
+    try {
+        const postRef = doc(db, "posts", postId);
+        await updateDoc(postRef, {
+            likes: isLiked ? arrayRemove(auth.currentUser.uid) : arrayUnion(auth.currentUser.uid)
+        });
+    } catch (e) {
+        console.error("좋아요 오류:", e);
+    }
+};
+
+window.addComment = async (postId) => {
+    if (!auth.currentUser) {
+        alert("로그인이 필요합니다.");
+        return;
+    }
+    const input = document.getElementById(`comment-input-${postId}`);
+    const text = input.value.trim();
+    if (!text) return;
+
+    try {
+        const postRef = doc(db, "posts", postId);
+        await updateDoc(postRef, {
+            comments: arrayUnion({
+                uid: auth.currentUser.uid,
+                userName: auth.currentUser.displayName,
+                text: text,
+                timestamp: Date.now(),
+                likes: []
+            })
+        });
+        input.value = "";
+    } catch (e) {
+        console.error("댓글 추가 오류:", e);
+    }
 };
 
 window.toggleComments = (postId) => {
     const el = document.getElementById(`comments-${postId}`);
-    if (el.style.display === 'block') {
-        el.style.display = 'none'; openCommentsStore.delete(postId);
-    } else {
-        el.style.display = 'block'; openCommentsStore.add(postId);
+    if (el) {
+        el.style.display = (el.style.display === 'none' || el.style.display === '') ? 'block' : 'none';
     }
 };
 
 window.deletePost = async (postId) => {
-    if (confirm("정말 삭제하시겠습니까?")) await deleteDoc(doc(db, "posts", postId));
+    if (!auth.currentUser) return;
+    if (confirm("정말 삭제하시겠습니까?")) {
+        try {
+            await deleteDoc(doc(db, "posts", postId));
+        } catch (e) {
+            alert("삭제 권한이 없거나 오류가 발생했습니다.");
+        }
+    }
 };
 
 function escapeHtml(text) {
