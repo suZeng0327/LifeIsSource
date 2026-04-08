@@ -80,7 +80,6 @@ async function syncUserData(user) {
     }
     const userRef = doc(db, "users", user.uid);
     
-    // [수정 핵심]: 기존 정보를 덮어쓰지 않도록 setDoc에 merge: true 사용
     await setDoc(userRef, { 
         name: user.displayName, 
         photoURL: user.photoURL,
@@ -91,7 +90,6 @@ async function syncUserData(user) {
         if (doc.exists()) {
             myFollowingList = doc.data()?.following || [];
             renderFollowSidebar();
-            // 팔로우 탭이나 프로필 페이지 상태를 실시간 반영
             if(currentView === 'follow' || currentView === 'user') updateFeed();
         }
     });
@@ -352,7 +350,6 @@ window.showUserPosts = async (uid) => {
     updateFeed();
 };
 
-// [수정 핵심]: toggleFollow 함수 보강
 window.toggleFollow = async (uid, name, isFollowing) => {
     if (!auth.currentUser) {
         alert("로그인이 필요합니다.");
@@ -367,7 +364,6 @@ window.toggleFollow = async (uid, name, isFollowing) => {
             await updateDoc(myRef, { following: updatedList });
             await updateDoc(targetRef, { followers: arrayRemove(auth.currentUser.uid) });
         } else {
-            // [수정]: setDoc과 merge를 사용하여 문서 유실 방지
             await setDoc(myRef, { 
                 following: arrayUnion({ uid: uid, name: name }) 
             }, { merge: true });
@@ -376,10 +372,7 @@ window.toggleFollow = async (uid, name, isFollowing) => {
                 followers: arrayUnion(auth.currentUser.uid) 
             }, { merge: true });
         }
-        
-        // UI 즉시 업데이트를 위해 프로필 다시 렌더링
         if (currentView === 'user') showUserPosts(uid);
-        
     } catch (e) {
         console.error("Follow Toggle Error:", e);
         alert("팔로우 처리 중 오류가 발생했습니다.");
@@ -398,7 +391,6 @@ document.getElementById('post-btn').onclick = async () => {
     const code = document.getElementById('code-input').value;
     const desc = document.getElementById('desc-input').value;
     const lang = document.getElementById('language-select').value;
-    
     const noticeCheckbox = document.getElementById('is-notice-checkbox');
     const isNotice = noticeCheckbox ? noticeCheckbox.checked : false;
 
@@ -483,11 +475,6 @@ function updateFeed() {
                 hljs.highlightElement(el);
             });
         }
-    }, (error) => {
-        console.error("Feed Load Error: ", error);
-        if(error.code === 'permission-denied') {
-            feed.innerHTML = `<p style="text-align:center; margin-top:50px; color:#ff5252;">데이터 접근 권한이 없습니다.</p>`;
-        }
     });
 }
 
@@ -529,8 +516,7 @@ function createPostElement(post) {
             </div>
         </div>
         <div class="comment-section" id="comments-${post.id}" style="${isCommentOpen}">
-            <div class="comment-list" id="comment-list-${post.id}">
-                </div>
+            <div class="comment-list" id="comment-list-${post.id}"></div>
             <div class="comment-input-area">
                 <input type="text" id="input-${post.id}" placeholder="댓글을 입력하세요...">
                 <button id="add-comment-${post.id}">등록</button>
@@ -557,7 +543,7 @@ function createPostElement(post) {
             commentItem.innerHTML = `
                 <div class="comment-main">
                     <div class="comment-body" style="flex:1;">
-                        <span class="comment-user" style="cursor:pointer">${escapeHtml(c.user)}:</span>
+                        <span class="comment-user" style="cursor:pointer">${escapeHtml(c.user || c.userName)}:</span>
                         <span class="comment-text">${escapeHtml(c.text)}</span>
                     </div>
                     <div class="comment-actions">
@@ -585,12 +571,9 @@ function createPostElement(post) {
         navigator.clipboard.writeText(post.content).then(() => {
             const originalText = copyBtn.innerText;
             copyBtn.innerText = "✔ 복사됨";
-            setTimeout(() => {
-                copyBtn.innerText = originalText;
-            }, 2000);
+            setTimeout(() => { copyBtn.innerText = originalText; }, 2000);
         });
     };
-    
     return div;
 }
 
@@ -599,11 +582,8 @@ window.startEdit = async (postId) => {
     const contentView = postDiv.querySelector('.post-content-view');
     const postSnap = await getDoc(doc(db, "posts", postId));
     const data = postSnap.data();
-    
     if (postDiv.querySelector('.inline-edit-form')) return;
-
     contentView.style.display = 'none';
-    
     const editForm = document.createElement('div');
     editForm.className = 'inline-edit-form';
     editForm.innerHTML = `
@@ -627,9 +607,7 @@ window.startEdit = async (postId) => {
     `;
     editForm.querySelector(`#edit-code-${postId}`).value = data.content;
     editForm.querySelector(`#edit-desc-${postId}`).value = data.description || '';
-    
     postDiv.prepend(editForm);
-
     document.getElementById(`save-edit-btn-${postId}`).onclick = () => saveEdit(postId);
     document.getElementById(`cancel-edit-btn-${postId}`).onclick = () => {
         editForm.remove();
@@ -647,14 +625,31 @@ window.saveEdit = async (postId) => {
     });
 };
 
+// [수정 핵심]: 중복 정의된 addComment를 하나로 통합하고 ID 참조 오류 해결
 window.addComment = async (postId) => {
-    const input = document.getElementById(`input-${postId}`);
-    if (!auth.currentUser || !input.value.trim()) return;
-    const postRef = doc(db, "posts", postId);
-    await updateDoc(postRef, {
-        comments: arrayUnion({ user: auth.currentUser.displayName, text: input.value, uid: auth.currentUser.uid, likes: [], createdAt: Date.now() })
-    });
-    input.value = "";
+    if (!auth.currentUser) {
+        alert("로그인이 필요합니다.");
+        return;
+    }
+    const input = document.getElementById(`input-${postId}`); // createPostElement의 ID와 일치시킴
+    const text = input.value.trim();
+    if (!text) return;
+
+    try {
+        const postRef = doc(db, "posts", postId);
+        await updateDoc(postRef, {
+            comments: arrayUnion({
+                uid: auth.currentUser.uid,
+                user: auth.currentUser.displayName,
+                text: text,
+                createdAt: Date.now(),
+                likes: []
+            })
+        });
+        input.value = "";
+    } catch (e) {
+        console.error("댓글 추가 오류:", e);
+    }
 };
 
 window.deleteComment = async (postId, index) => {
@@ -670,13 +665,10 @@ window.editComment = (postId, index, oldText) => {
     const commentDiv = document.getElementById(`comment-${postId}-${index}`);
     const bodyArea = commentDiv.querySelector('.comment-body');
     const actionArea = commentDiv.querySelector('.comment-actions');
-    
     if (commentDiv.classList.contains('is-editing')) return;
     commentDiv.classList.add('is-editing');
-    
     const originalBodyHTML = bodyArea.innerHTML;
     actionArea.style.display = 'none'; 
-
     bodyArea.innerHTML = `
         <div class="inline-edit-box" style="display:flex; gap:5px; margin-top:5px; width:100%;">
             <input type="text" id="edit-input-${postId}-${index}" style="flex:1; background:#333; border:1px solid #4caf50; color:#fff; padding:5px; border-radius:4px; font-size:12px;">
@@ -685,11 +677,7 @@ window.editComment = (postId, index, oldText) => {
         </div>
     `;
     bodyArea.querySelector('input').value = oldText;
-
-    document.getElementById(`submit-edit-${postId}-${index}`).onclick = () => {
-        updateComment(postId, index, oldText);
-    };
-
+    document.getElementById(`submit-edit-${postId}-${index}`).onclick = () => updateComment(postId, index, oldText);
     document.getElementById(`cancel-edit-${postId}-${index}`).onclick = () => {
         commentDiv.classList.remove('is-editing');
         bodyArea.innerHTML = originalBodyHTML;
@@ -700,13 +688,7 @@ window.editComment = (postId, index, oldText) => {
 window.updateComment = async (postId, index, oldText) => {
     const input = document.getElementById(`edit-input-${postId}-${index}`);
     const newText = input.value.trim();
-    if (!newText) return;
-    
-    if (newText === oldText) {
-        updateFeed();
-        return;
-    }
-
+    if (!newText || newText === oldText) return;
     const postRef = doc(db, "posts", postId);
     const postSnap = await getDoc(postRef);
     const comments = postSnap.data().comments;
@@ -730,57 +712,29 @@ window.toggleLike = async (postId, isLiked) => {
         alert("로그인이 필요합니다.");
         return;
     }
-    try {
-        const postRef = doc(db, "posts", postId);
-        await updateDoc(postRef, {
-            likes: isLiked ? arrayRemove(auth.currentUser.uid) : arrayUnion(auth.currentUser.uid)
-        });
-    } catch (e) {
-        console.error("좋아요 오류:", e);
-    }
-};
-
-window.addComment = async (postId) => {
-    if (!auth.currentUser) {
-        alert("로그인이 필요합니다.");
-        return;
-    }
-    const input = document.getElementById(`comment-input-${postId}`);
-    const text = input.value.trim();
-    if (!text) return;
-
-    try {
-        const postRef = doc(db, "posts", postId);
-        await updateDoc(postRef, {
-            comments: arrayUnion({
-                uid: auth.currentUser.uid,
-                userName: auth.currentUser.displayName,
-                text: text,
-                timestamp: Date.now(),
-                likes: []
-            })
-        });
-        input.value = "";
-    } catch (e) {
-        console.error("댓글 추가 오류:", e);
-    }
+    const postRef = doc(db, "posts", postId);
+    await updateDoc(postRef, {
+        likes: isLiked ? arrayRemove(auth.currentUser.uid) : arrayUnion(auth.currentUser.uid)
+    });
 };
 
 window.toggleComments = (postId) => {
     const el = document.getElementById(`comments-${postId}`);
     if (el) {
-        el.style.display = (el.style.display === 'none' || el.style.display === '') ? 'block' : 'none';
+        if (el.style.display === 'none' || el.style.display === '') {
+            el.style.display = 'block';
+            openCommentsStore.add(postId);
+        } else {
+            el.style.display = 'none';
+            openCommentsStore.delete(postId);
+        }
     }
 };
 
 window.deletePost = async (postId) => {
     if (!auth.currentUser) return;
     if (confirm("정말 삭제하시겠습니까?")) {
-        try {
-            await deleteDoc(doc(db, "posts", postId));
-        } catch (e) {
-            alert("삭제 권한이 없거나 오류가 발생했습니다.");
-        }
+        await deleteDoc(doc(db, "posts", postId));
     }
 };
 
@@ -791,11 +745,6 @@ function escapeHtml(text) {
     return div.innerHTML;   
 }
 
-const btnLatest = document.getElementById('sort-latest');
-if(btnLatest) btnLatest.onclick = () => { currentSort = 'latest'; currentView = 'all'; updateFeed(); };
-
-const btnPopular = document.getElementById('sort-popular');
-if(btnPopular) btnPopular.onclick = () => { currentSort = 'popular'; currentView = 'all'; updateFeed(); };
-
-const btnFollowSort = document.getElementById('sort-follow');
-if(btnFollowSort) btnFollowSort.onclick = () => { currentView = 'follow'; currentSort = 'latest'; updateFeed(); };
+document.getElementById('sort-latest').onclick = () => { currentSort = 'latest'; currentView = 'all'; updateFeed(); };
+document.getElementById('sort-popular').onclick = () => { currentSort = 'popular'; currentView = 'all'; updateFeed(); };
+document.getElementById('sort-follow').onclick = () => { currentView = 'follow'; currentSort = 'latest'; updateFeed(); };
