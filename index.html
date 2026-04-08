@@ -10,7 +10,7 @@
         frame-src 'self' https://lifeissource.firebaseapp.com https://apis.google.com https://*.akamaized.net;">
     
     <link rel="icon" href="icon.png" type="image/png">
-    <meta name="description" content="우리들의 코드 저장소, LifeIsSource. 누구나 자유롭게 코드를 공유하고 함께 성장하는 오픈소스 개발자 커뮤니티입니다.">
+    <meta name="description" content="우리들의 코드 저장소, LifeIsSource.">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/vs2015.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <meta charset="UTF-8">
@@ -19,14 +19,10 @@
     <link rel="stylesheet" href="style.css">
 
     <style>
-        /* 광고 영역 반응형 제어 */
-        .left-ad-area { display: block; }
+        .left-ad-area { display: block; position: sticky; top: 80px; height: 600px; }
         .mobile-bottom-ad { display: none; margin: 20px 0; text-align: center; }
-
-        @media (max-width: 768px) {
-            .left-ad-area { display: none; } /* 모바일에서는 왼쪽 배너 숨김 */
-            .mobile-bottom-ad { display: block; } /* 모바일에서만 띠 배너 노출 */
-        }
+        @media (max-width: 1024px) { .left-ad-area { display: none; } }
+        @media (max-width: 768px) { .mobile-bottom-ad { display: block; } }
     </style>
 </head>
 <body>
@@ -51,6 +47,41 @@
                 <button id="open-write-btn" style="width: 100%; max-width: 400px; font-size: 1.1rem; padding: 15px;">+ 코드쓰기</button>
             </div>
 
+            <div class="write-card" id="write-area" style="display: none;">
+                <div class="card-header">
+                    <h3>새 코드 공유하기</h3>
+                    <select id="language-select">
+                        <option value="text">text</option>
+                        <option value="c">C</option>
+                        <option value="cpp">C++</option>
+                        <option value="python">Python</option>
+                        <option value="c#">C#</option>
+                        <option value="java">Java</option>
+                        <option value="javascript">JavaScript</option>
+                    </select>
+                </div>
+                <textarea id="code-input" placeholder="여기에 소스코드를 입력하세요..."></textarea>
+                <input type="text" id="desc-input" placeholder="코드에 대한 간단한 설명을 적어주세요. (공지사항 제목)">
+                <div class="actions" style="display: flex; align-items: center; justify-content: flex-end;">
+                    <label id="notice-label" style="display: none; color: #4caf50; margin-right: auto; cursor: pointer; font-size: 0.9rem;">
+                        <input type="checkbox" id="is-notice-checkbox" style="vertical-align: middle;"> 공지사항으로 등록
+                    </label>
+                    <button id="cancel-write-btn" style="background: #555; margin-right: 10px;">취소</button>
+                    <button id="post-btn">공유하기</button>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 15px;">
+                <div class="sort-options" id="sort-area" style="margin-bottom: 0; flex-shrink: 0;">
+                    <button id="sort-latest" class="active">최신순</button>
+                    <button id="sort-popular">인기순</button>
+                    <button id="sort-follow">팔로우</button>
+                </div>
+                <div class="mobile-search-area" style="flex-grow: 1;">
+                    <input type="text" id="mobile-search-input" placeholder="찾고 싶은 코드를 검색해 보세요" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #4caf50; background: #1e1e1e; color: #fff;">
+                </div>
+            </div>
+
             <div id="feed"></div>
 
             <div class="mobile-bottom-ad">
@@ -67,16 +98,12 @@
                 <h4>팔로우 목록</h4>
                 <div id="follow-list">로그인이 필요합니다.</div>
             </div>
-            
             <div class="sidebar-section" style="margin-top: 20px;">
                 <h4>📢 공지사항</h4>
-                <div id="notice-list" style="font-size: 0.9rem; color: #ccc;">
-                    공지사항이 없습니다.
-                </div>
+                <div id="notice-list" style="font-size: 0.9rem; color: #ccc;">공지사항이 없습니다.</div>
             </div>
         </aside>
     </div>
-
     <script type="module" src="script.js"></script>
 </body>
 </html>

@@ -783,3 +783,10 @@ function escapeHtml(text) {
 document.getElementById('sort-latest').onclick = () => { currentSort = 'latest'; currentView = 'all'; updateFeed(); };
 document.getElementById('sort-popular').onclick = () => { currentSort = 'popular'; currentView = 'all'; updateFeed(); };
 document.getElementById('sort-follow').onclick = () => { currentView = 'follow'; currentSort = 'latest'; updateFeed(); };
+
+// script.js 파일 가장 하단에 추가 (클릭 에러 해결용)
+window.toggleLike = toggleLike;
+window.toggleComments = toggleComments;
+window.deletePost = deletePost;
+window.toggleFollow = toggleFollow; 
+// 만약 이 외에도 HTML에서 직접 onclick으로 호출하는 함수가 있다면 똑같이 추가하세요.
