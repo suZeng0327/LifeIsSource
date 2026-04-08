@@ -225,11 +225,13 @@ pre {
     background-color: #1e1e1e !important; 
     padding: 15px;
     overflow-x: auto;
+    white-space: pre; /* 코드 줄바꿈 방지 및 원본 유지 */
 }
 code {
-    font-family: 'Consolas', monospace;
+    font-family: 'Consolas', 'Monaco', monospace;
     background: none !important;
     padding: 0 !important;
+    color: inherit;
 }
 
 .copy-btn {

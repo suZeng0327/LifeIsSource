@@ -117,6 +117,7 @@ function renderFollowSidebar() {
     });
 }
 
+// [수정 및 추가] 공지사항 로드 및 단독 페이지 이동 기능
 function loadNotices() {
     const q = query(collection(db, "posts"), where("isNotice", "==", true), orderBy("createdAt", "desc"));
     onSnapshot(q, (snapshot) => {
@@ -133,26 +134,64 @@ function loadNotices() {
             const post = docSnap.data();
             const item = document.createElement('div');
             item.className = 'notice-item';
-            item.style = "padding: 8px 0; border-bottom: 1px solid #333; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.85rem;";
+            // 가로 길이를 넘어가면 ... 처리하는 스타일 적용
+            item.style = "padding: 8px 0; border-bottom: 1px solid #333; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.85rem; display: block; width: 100%;";
             
             const title = post.description || "제목 없는 공지";
-            item.textContent = `📌 ${title}`;
+            item.textContent = `📢 ${title}`;
             
-            item.onclick = () => {
-                const targetPost = document.getElementById(`post-${docSnap.id}`);
-                if (targetPost) {
-                    targetPost.scrollIntoView({ behavior: 'smooth' });
-                    targetPost.style.boxShadow = "0 0 15px #4caf50";
-                    setTimeout(() => targetPost.style.boxShadow = "none", 2000);
-                } else {
-                    alert("홈 화면에서 해당 공지사항을 확인하실 수 있습니다.");
-                    goHome();
-                }
-            };
+            // 클릭 시 해당 공지사항만 나오는 페이지로 이동
+            item.onclick = () => goToNoticePage(docSnap.id);
             noticeList.appendChild(item);
         });
     });
 }
+
+// [추가] 특정 공지사항만 보여주는 단독 페이지 기능
+async function goToNoticePage(postId) {
+    const feed = document.getElementById('feed');
+    if (!feed) return;
+
+    // 다른 UI 요소 숨기기
+    if (writeArea) writeArea.style.display = 'none';
+    if (toggleArea) toggleArea.style.display = 'none';
+    const sortArea = document.getElementById('sort-area');
+    if (sortArea) sortArea.style.display = 'none';
+    document.getElementById('user-profile-header').style.display = 'none';
+
+    feed.innerHTML = "<p style='text-align:center; margin-top:50px;'>공지사항을 불러오는 중...</p>";
+
+    try {
+        const postDoc = await getDoc(doc(db, "posts", postId));
+        if (postDoc.exists()) {
+            const postData = { id: postDoc.id, ...postDoc.data() };
+            feed.innerHTML = "";
+
+            // 홈으로 버튼 추가
+            const homeBtnDiv = document.createElement('div');
+            homeBtnDiv.style.marginBottom = "20px";
+            homeBtnDiv.innerHTML = `<button onclick="goHome()" class="home-btn" style="cursor:pointer;">← 홈으로</button>`;
+            feed.appendChild(homeBtnDiv);
+
+            // 공지사항 게시글 렌더링
+            feed.appendChild(createPostElement(postData));
+            
+            // 하이라이트 적용
+            document.querySelectorAll('pre code').forEach((el) => {
+                hljs.highlightElement(el);
+            });
+            
+            window.scrollTo(0, 0);
+        } else {
+            alert("해당 공지사항이 존재하지 않습니다.");
+            goHome();
+        }
+    } catch (e) {
+        console.error(e);
+        goHome();
+    }
+}
+window.goToNoticePage = goToNoticePage;
 
 function updateSortButtons() {
     const btnLatest = document.getElementById('sort-latest');
@@ -625,13 +664,12 @@ window.saveEdit = async (postId) => {
     });
 };
 
-// [수정 핵심]: 중복 정의된 addComment를 하나로 통합하고 ID 참조 오류 해결
 window.addComment = async (postId) => {
     if (!auth.currentUser) {
         alert("로그인이 필요합니다.");
         return;
     }
-    const input = document.getElementById(`input-${postId}`); // createPostElement의 ID와 일치시킴
+    const input = document.getElementById(`input-${postId}`);
     const text = input.value.trim();
     if (!text) return;
 
