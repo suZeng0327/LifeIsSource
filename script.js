@@ -49,12 +49,14 @@ function showWriteTemplate() {
     writeArea.style.display = 'block';
     toggleArea.style.display = 'none';
     
-    // 운영자일 경우 공지사항 체크박스 표시
+    // 운영자일 경우 공지사항 체크박스 표시 (수정됨: auth.currentUser가 확실히 있을 때만 실행)
     const noticeLabel = document.getElementById('notice-label');
-    if (auth.currentUser.uid === ADMIN_UID) {
-        noticeLabel.style.display = 'block';
-    } else {
-        noticeLabel.style.display = 'none';
+    if (noticeLabel) {
+        if (auth.currentUser && auth.currentUser.uid === ADMIN_UID) {
+            noticeLabel.style.display = 'block';
+        } else {
+            noticeLabel.style.display = 'none';
+        }
     }
 }
 
@@ -133,6 +135,8 @@ function updateSortButtons() {
     const btnLatest = document.getElementById('sort-latest');
     const btnPopular = document.getElementById('sort-popular');
     const btnFollow = document.getElementById('sort-follow');
+
+    if (!btnLatest || !btnPopular || !btnFollow) return;
 
     btnLatest.classList.remove('active');
     btnPopular.classList.remove('active');
@@ -343,7 +347,10 @@ document.getElementById('post-btn').onclick = async () => {
     const code = document.getElementById('code-input').value;
     const desc = document.getElementById('desc-input').value;
     const lang = document.getElementById('language-select').value;
-    const isNotice = document.getElementById('is-notice-checkbox')?.checked || false;
+    
+    // 체크박스 값 가져오기 (수정됨)
+    const noticeCheckbox = document.getElementById('is-notice-checkbox');
+    const isNotice = noticeCheckbox ? noticeCheckbox.checked : false;
 
     if (!auth.currentUser || !code.trim()) return;
 
