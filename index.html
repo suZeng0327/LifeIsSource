@@ -58,8 +58,8 @@
                 <textarea id="code-input" placeholder="여기에 소스코드를 입력하세요..."></textarea>
                 <input type="text" id="desc-input" placeholder="코드에 대한 간단한 설명을 적어주세요.">
                 <div class="actions" style="display: flex; align-items: center; justify-content: flex-end;">
-                    <label id="notice-label" style="display: none; color: #aaa; margin-right: auto; cursor: pointer; font-size: 0.9rem;">
-                        <input type="checkbox" id="is-notice-checkbox" style="vertical-align: middle;"> 공지사항
+                    <label id="notice-label" style="display: none; color: #ffffff; margin-right: auto; cursor: pointer; font-size: 0.9rem; align-items: center;">
+                        <input type="checkbox" id="is-notice-checkbox" style="vertical-align: middle; margin-right: 5px;"> 공지사항
                     </label>
                     <button id="cancel-write-btn" style="background: #555; margin-right: 10px;">취소</button>
                     <button id="post-btn">공유하기</button>
@@ -100,6 +100,13 @@
             </div>
         </aside>
     </div>
+
+    <script>
+        // 이 로직은 Firebase의 onAuthStateChanged 등과 함께 script.js 내에 구현되어야 하지만,
+        // 확실한 노출을 위해 HTML 내에서 요소를 제어하는 기본 로직 가이드를 추가합니다.
+        // 실제 작동은 script.js에서 user.email === 'suzeng0327@gmail.com'일 때 
+        // document.getElementById('notice-label').style.display = 'flex'; 가 실행되어야 합니다.
+    </script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <script type="module" src="script.js"></script>

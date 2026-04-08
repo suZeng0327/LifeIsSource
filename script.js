@@ -18,6 +18,7 @@ const provider = new GoogleAuthProvider();
 
 // 운영자 정보
 const ADMIN_UID = "FTH2hM52eCYjsRGZKEO9UZl65D62";
+const ADMIN_EMAIL = "suzeng0327@gmail.com";
 
 let currentView = 'all'; 
 let currentSort = 'latest'; 
@@ -49,11 +50,12 @@ function showWriteTemplate() {
     writeArea.style.display = 'block';
     toggleArea.style.display = 'none';
     
-    // 운영자일 경우 공지사항 체크박스 표시 (수정됨: auth.currentUser가 확실히 있을 때만 실행)
+    // 운영자일 경우 공지사항 체크박스 표시 (수정됨: 이메일 조건 추가 및 display 설정 변경)
     const noticeLabel = document.getElementById('notice-label');
     if (noticeLabel) {
-        if (auth.currentUser && auth.currentUser.uid === ADMIN_UID) {
-            noticeLabel.style.display = 'block';
+        const isUserAdmin = auth.currentUser.uid === ADMIN_UID || auth.currentUser.email === ADMIN_EMAIL;
+        if (isUserAdmin) {
+            noticeLabel.style.display = 'flex'; // HTML 구조에 맞춰 flex로 설정하여 수평 정렬 보장
         } else {
             noticeLabel.style.display = 'none';
         }
@@ -348,7 +350,7 @@ document.getElementById('post-btn').onclick = async () => {
     const desc = document.getElementById('desc-input').value;
     const lang = document.getElementById('language-select').value;
     
-    // 체크박스 값 가져오기 (수정됨)
+    // 체크박스 값 가져오기
     const noticeCheckbox = document.getElementById('is-notice-checkbox');
     const isNotice = noticeCheckbox ? noticeCheckbox.checked : false;
 
