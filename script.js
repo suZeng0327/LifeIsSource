@@ -117,7 +117,7 @@ function renderFollowSidebar() {
     });
 }
 
-// [수정 및 추가] 공지사항 로드 및 단독 페이지 이동 기능
+// 공지사항 로드 및 단독 페이지 이동 기능
 function loadNotices() {
     const q = query(collection(db, "posts"), where("isNotice", "==", true), orderBy("createdAt", "desc"));
     onSnapshot(q, (snapshot) => {
@@ -134,30 +134,29 @@ function loadNotices() {
             const post = docSnap.data();
             const item = document.createElement('div');
             item.className = 'notice-item';
-            // 가로 길이를 넘어가면 ... 처리하는 스타일 적용
+            // 기존 스타일 유지
             item.style = "padding: 8px 0; border-bottom: 1px solid #333; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.85rem; display: block; width: 100%;";
             
             const title = post.description || "제목 없는 공지";
             item.textContent = `📢 ${title}`;
             
-            // 클릭 시 해당 공지사항만 나오는 페이지로 이동
             item.onclick = () => goToNoticePage(docSnap.id);
             noticeList.appendChild(item);
         });
     });
 }
 
-// [추가] 특정 공지사항만 보여주는 단독 페이지 기능
+// 특정 공지사항만 보여주는 단독 페이지 기능
 async function goToNoticePage(postId) {
     const feed = document.getElementById('feed');
     if (!feed) return;
 
-    // 다른 UI 요소 숨기기
     if (writeArea) writeArea.style.display = 'none';
     if (toggleArea) toggleArea.style.display = 'none';
     const sortArea = document.getElementById('sort-area');
     if (sortArea) sortArea.style.display = 'none';
-    document.getElementById('user-profile-header').style.display = 'none';
+    const profileHeader = document.getElementById('user-profile-header');
+    if (profileHeader) profileHeader.style.display = 'none';
 
     feed.innerHTML = "<p style='text-align:center; margin-top:50px;'>공지사항을 불러오는 중...</p>";
 
@@ -167,16 +166,13 @@ async function goToNoticePage(postId) {
             const postData = { id: postDoc.id, ...postDoc.data() };
             feed.innerHTML = "";
 
-            // 홈으로 버튼 추가
             const homeBtnDiv = document.createElement('div');
             homeBtnDiv.style.marginBottom = "20px";
             homeBtnDiv.innerHTML = `<button onclick="goHome()" class="home-btn" style="cursor:pointer;">← 홈으로</button>`;
             feed.appendChild(homeBtnDiv);
 
-            // 공지사항 게시글 렌더링
             feed.appendChild(createPostElement(postData));
             
-            // 하이라이트 적용
             document.querySelectorAll('pre code').forEach((el) => {
                 hljs.highlightElement(el);
             });
@@ -274,7 +270,8 @@ function goHome() {
     if(searchInput) searchInput.value = "";
     
     hideWriteTemplate(); 
-    document.getElementById('user-profile-header').style.display = 'none';
+    const header = document.getElementById('user-profile-header');
+    if(header) header.style.display = 'none';
     const sortArea = document.getElementById('sort-area');
     if(sortArea) sortArea.style.display = 'flex';
     
