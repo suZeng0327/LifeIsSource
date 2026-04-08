@@ -50,12 +50,12 @@ function showWriteTemplate() {
     writeArea.style.display = 'block';
     toggleArea.style.display = 'none';
     
-    // 운영자일 경우 공지사항 체크박스 표시 (수정됨: 이메일 조건 추가 및 display 설정 변경)
+    // 운영자일 경우 공지사항 체크박스 표시
     const noticeLabel = document.getElementById('notice-label');
     if (noticeLabel) {
         const isUserAdmin = auth.currentUser.uid === ADMIN_UID || auth.currentUser.email === ADMIN_EMAIL;
         if (isUserAdmin) {
-            noticeLabel.style.display = 'flex'; // HTML 구조에 맞춰 flex로 설정하여 수평 정렬 보장
+            noticeLabel.style.display = 'flex'; 
         } else {
             noticeLabel.style.display = 'none';
         }
@@ -72,7 +72,11 @@ openWriteBtn.onclick = showWriteTemplate;
 cancelWriteBtn.onclick = hideWriteTemplate;
 
 async function syncUserData(user) {
-    if (!user) return;
+    if (!user) {
+        myFollowingList = [];
+        renderFollowSidebar();
+        return;
+    }
     const userRef = doc(db, "users", user.uid);
     const userSnap = await getDoc(userRef);
     if (!userSnap.exists()) {
@@ -81,51 +85,67 @@ async function syncUserData(user) {
     onSnapshot(userRef, (doc) => {
         myFollowingList = doc.data()?.following || [];
         renderFollowSidebar();
+        // 팔로우 탭이나 프로필 페이지 상태를 실시간 반영하기 위해 피드 갱신 (선택적)
+        if(currentView === 'follow' || currentView === 'user') updateFeed();
     });
 }
 
 function renderFollowSidebar() {
     const listEl = document.getElementById('follow-list');
     if (!auth.currentUser) { listEl.textContent = "로그인이 필요합니다."; return; }
-    if (myFollowingList.length === 0) { listEl.innerHTML = "<p>팔로우한 유저가 없습니다.</p>"; return; }
     
-    // 리스트 초기화 후 안전하게 추가
+    // 팔로우 상태에서 아무도 없을 때 텍스트 확인 요구 반영
+    if (myFollowingList.length === 0) { 
+        listEl.innerHTML = "<p style='color:#888; font-size:0.85rem;'>팔로우한 사람이 없습니다.</p>"; 
+        return; 
+    }
+    
     listEl.innerHTML = "";
     myFollowingList.forEach(u => {
         const item = document.createElement('div');
         item.className = 'follow-item';
         item.textContent = `👤 ${u.name}`;
+        item.style.cursor = "pointer";
+        item.style.padding = "5px 0";
         item.onclick = () => showUserPosts(u.uid);
         listEl.appendChild(item);
     });
 }
 
-// 공지사항 로드 함수
+// 공지사항 로드 함수 (우측 박스 업데이트 로직 포함)
 function loadNotices() {
+    // 모든 글 중 isNotice가 true인 것만 가져옴
     const q = query(collection(db, "posts"), where("isNotice", "==", true), orderBy("createdAt", "desc"));
     onSnapshot(q, (snapshot) => {
         const noticeList = document.getElementById('notice-list');
         if (!noticeList) return;
         noticeList.innerHTML = "";
+        
         if (snapshot.empty) {
             noticeList.innerHTML = "<p style='color:#666;'>공지사항이 없습니다.</p>";
             return;
         }
+        
         snapshot.forEach((doc) => {
             const post = doc.data();
             const item = document.createElement('div');
             item.className = 'notice-item';
+            // 디자인 요청 반영: 한 줄 표현 및 길어지면 ... 처리
             item.style = "padding: 8px 0; border-bottom: 1px solid #333; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;";
-            item.textContent = `📌 ${post.description || "제목 없음"}`;
+            
+            // "간단한 설명" 부분이 제목이 됨
+            const title = post.description || "제목 없는 공지";
+            item.textContent = `📌 ${title}`;
+            
             item.onclick = () => {
-                // 공지사항 클릭 시 해당 글 위치로 이동하거나 피드 필터링 등 상세 보기 로직
                 const targetPost = document.getElementById(`post-${doc.id}`);
                 if (targetPost) {
                     targetPost.scrollIntoView({ behavior: 'smooth' });
                     targetPost.style.boxShadow = "0 0 15px #4caf50";
                     setTimeout(() => targetPost.style.boxShadow = "none", 2000);
                 } else {
-                    alert("게시글을 찾는 중입니다. 홈 화면에서 확인해 주세요.");
+                    // 현재 피드에 없으면 홈으로 이동 후 해당 글로 스크롤 유도 (간단히 알림)
+                    goHome();
                 }
             };
             noticeList.appendChild(item);
@@ -155,7 +175,7 @@ function updateSortButtons() {
 
 function renderAuthUI(user, viewMode = 'all') {
     const authSection = document.getElementById('auth-section');
-    authSection.innerHTML = ""; // 초기화
+    authSection.innerHTML = ""; 
 
     if (user) {
         const userInfo = document.createElement('div');
@@ -232,7 +252,7 @@ async function showMyPosts() {
 
     const header = document.getElementById('user-profile-header');
     header.style.display = 'block';
-    header.innerHTML = ""; // 안전하게 다시 생성
+    header.innerHTML = ""; 
 
     const card = document.createElement('div');
     card.className = 'profile-header-card';
@@ -323,18 +343,28 @@ window.showUserPosts = async (uid) => {
 };
 
 window.toggleFollow = async (uid, name, isFollowing) => {
-    if (!auth.currentUser) return;
+    if (!auth.currentUser) {
+        alert("로그인이 필요합니다.");
+        return;
+    }
     const myRef = doc(db, "users", auth.currentUser.uid);
     const targetRef = doc(db, "users", uid);
 
-    if (isFollowing) {
-        await updateDoc(myRef, { following: arrayRemove({ uid, name }) });
-        await updateDoc(targetRef, { followers: arrayRemove(auth.currentUser.uid) });
-    } else {
-        await updateDoc(myRef, { following: arrayUnion({ uid, name }) });
-        await updateDoc(targetRef, { followers: arrayUnion(auth.currentUser.uid) });
+    try {
+        if (isFollowing) {
+            // 언팔로우: following 목록에서 해당 객체 정확히 제거
+            const updatedList = myFollowingList.filter(u => u.uid !== uid);
+            await updateDoc(myRef, { following: updatedList });
+            await updateDoc(targetRef, { followers: arrayRemove(auth.currentUser.uid) });
+        } else {
+            // 팔로우: 중복 방지를 위해 객체 추가
+            await updateDoc(myRef, { following: arrayUnion({ uid: uid, name: name }) });
+            await updateDoc(targetRef, { followers: arrayUnion(auth.currentUser.uid) });
+        }
+        // UI 즉시 갱신을 위해 데이터 다시 로드할 필요 없이 onSnapshot이 처리함
+    } catch (e) {
+        console.error("Follow Toggle Error:", e);
     }
-    showUserPosts(uid);
 };
 
 document.getElementById('home-logo').onclick = goHome;
@@ -350,7 +380,6 @@ document.getElementById('post-btn').onclick = async () => {
     const desc = document.getElementById('desc-input').value;
     const lang = document.getElementById('language-select').value;
     
-    // 체크박스 값 가져오기
     const noticeCheckbox = document.getElementById('is-notice-checkbox');
     const isNotice = noticeCheckbox ? noticeCheckbox.checked : false;
 
@@ -369,7 +398,7 @@ document.getElementById('post-btn').onclick = async () => {
             comments: []
         });
         hideWriteTemplate(); 
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error("Post Create Error:", e); }
 };
 
 function resetWriteArea() {
@@ -387,6 +416,12 @@ function updateFeed() {
     if (window.unsubscribeFeed) window.unsubscribeFeed();
     const feed = document.getElementById('feed');
     updateSortButtons();
+
+    // 비로그인 상태에서 팔로우 버튼 클릭 시 예외 처리
+    if (currentView === 'follow' && !auth.currentUser) {
+        feed.innerHTML = `<p style="text-align:center; margin-top:50px; color:#888;">로그인이 필요한 서비스입니다.</p>`;
+        return;
+    }
 
     let q;
     if (currentView === 'my' && auth.currentUser) {
@@ -420,7 +455,9 @@ function updateFeed() {
 
         feed.innerHTML = "";
         if (posts.length === 0) {
-            feed.innerHTML = `<p style="text-align:center; margin-top:50px; color:#888;">표시할 코드가 없습니다.</p>`;
+            // 팔로우 탭에서 글이 없을 때 메시지 처리
+            const emptyMsg = currentView === 'follow' ? "팔로우한 사람의 새 글이 없습니다." : "표시할 코드가 없습니다.";
+            feed.innerHTML = `<p style="text-align:center; margin-top:50px; color:#888;">${emptyMsg}</p>`;
         } else {
             posts.forEach((post) => feed.appendChild(createPostElement(post)));
             document.querySelectorAll('pre code').forEach((el) => {
@@ -429,6 +466,10 @@ function updateFeed() {
         }
     }, (error) => {
         console.error("Feed Load Error: ", error);
+        // 권한 에러 등이 발생했을 때 (게시글 사라짐 현상 방지용 로그)
+        if(error.code === 'permission-denied') {
+            feed.innerHTML = `<p style="text-align:center; margin-top:50px; color:#ff5252;">데이터 접근 권한이 없습니다.</p>`;
+        }
     });
 }
 
@@ -439,7 +480,7 @@ function createPostElement(post) {
     const div = document.createElement('div');
     div.className = 'post';
     div.id = `post-${post.id}`;
-    // 공지사항일 경우 스타일 강조
+    
     if (post.isNotice) {
         div.style.border = "1px solid #4caf50";
         div.style.background = "rgba(76, 175, 80, 0.05)";
@@ -479,7 +520,6 @@ function createPostElement(post) {
         </div>
     `;
 
-    // 이벤트 리스너 안전하게 수동 연결
     div.querySelector('.post-author').onclick = () => showUserPosts(post.uid);
     if(isOwner) {
         div.querySelector(`#edit-post-${post.id}`).onclick = () => startEdit(post.id);
@@ -489,7 +529,6 @@ function createPostElement(post) {
     div.querySelector(`#comment-toggle-${post.id}`).onclick = () => toggleComments(post.id);
     div.querySelector(`#add-comment-${post.id}`).onclick = () => addComment(post.id);
 
-    // 댓글 리스트 안전하게 렌더링
     const commentListEl = div.querySelector(`#comment-list-${post.id}`);
     if (post.comments) {
         post.comments.forEach((c, index) => {
@@ -568,7 +607,6 @@ window.startEdit = async (postId) => {
             <button id="cancel-edit-btn-${postId}" style="background:#555; font-size:12px; color:white; border:none; padding:8px 12px; border-radius:4px; cursor:pointer;">취소</button>
         </div>
     `;
-    // 텍스트 영역에 값 안전하게 삽입
     editForm.querySelector(`#edit-code-${postId}`).value = data.content;
     editForm.querySelector(`#edit-desc-${postId}`).value = data.description || '';
     

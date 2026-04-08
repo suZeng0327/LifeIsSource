@@ -106,10 +106,10 @@ main { flex: 3; min-width: 0; }
 
 /* 정렬 버튼 영역: flex 속성을 추가하여 검색창과 나란히 배치되게 함 */
 .sort-options { 
-    margin-bottom: 0; /* flex 부모 안에서 마진 조정 */
+    margin-bottom: 0; 
     display: flex; 
     gap: 10px; 
-    align-items: center; /* 세로 중앙 정렬 유지 */
+    align-items: center; 
 }
 .sort-options button { background: #262626; color: #888; border: 1px solid #333; padding: 8px 18px; transition: 0.3s; }
 
@@ -152,7 +152,7 @@ pre {
     border-radius: 8px; 
     font-size: 14px; 
     position: relative;
-    background-color: #1e1e1e !important; /* VS Code 배경색 */
+    background-color: #1e1e1e !important; 
     padding: 15px;
     overflow-x: auto;
 }
@@ -208,6 +208,36 @@ code {
     text-align: center;
     margin: 25px 0;
     width: 100%;
+}
+
+/* 추가 요청: 운영자용 공지사항 체크박스 영역 디자인 */
+#notice-label {
+    display: none; /* JS에서 관리자일 때만 flex로 변경됨 */
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    color: #4caf50;
+    cursor: pointer;
+    margin-right: auto; /* 왼쪽 정렬 유지 */
+}
+
+#is-notice-checkbox {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: #4caf50;
+}
+
+/* 추가 요청: 사이드바 공지사항 아이템 디자인 보강 */
+.notice-item {
+    transition: 0.2s;
+    font-size: 0.9rem;
+    color: #ccc;
+}
+.notice-item:hover {
+    color: #4caf50;
+    background: rgba(76, 175, 80, 0.1);
+    padding-left: 5px;
 }
 
 @media screen and (min-width: 1024px) {
@@ -295,4 +325,12 @@ code {
     outline: none;
     border-color: #4caf50 !important;
     box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+}
+
+/* 게시글 로딩/에러 메시지용 */
+.feed-msg {
+    text-align: center;
+    margin-top: 50px;
+    color: #888;
+    font-size: 0.95rem;
 }
